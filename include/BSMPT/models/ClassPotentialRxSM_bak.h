@@ -31,19 +31,23 @@ public:
   virtual ~Class_RxSM();
 
   // Choice of parameters of Lagrangian from https://arxiv.org/pdf/1512.05355 Eq. (11)
-  double lam, a1, a2, b3, b4, vS;
+  double lambdaS, lambdaHS, vS;
+
+  // Not an input parameter; lambda is fixed via the requirement of having
+  // one of the Higgs bosons as the SM one with 125.09 GeV
+  double lambda;
 
   // Not an input parameter; set to the SM value
   double vH;
 
   // Not input parameters; set through the tadpole equations
-  double musq, b2;
+  double msq, mSsq;
 
   double alpha;
 
   bool UnbrokenSingletPhase;
 
-  double dmusq, dlam, da1, da2, db2, db3, db4, dT1, dT2, dT3, dT4, dT5;
+  double dmsq, dlambda, dmSsq, dlambdaS, dlambdaHS, dT1, dT2, dT3, dT4, dT5;
 
   int pos_G1, pos_G2, pos_G0, pos_h, pos_H;
   int pos_h_SM, pos_h_H;

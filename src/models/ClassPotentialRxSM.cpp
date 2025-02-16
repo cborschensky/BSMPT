@@ -36,13 +36,13 @@ namespace Models
 Class_RxSM::Class_RxSM(const ISMConstants &smConstants)
     : Class_Potential_Origin(smConstants)
 {
-  Model = ModelID::ModelIDs::RXSM; // global int constant which will be used to
+  Model = ModelID::ModelIDs::RXSMNOZ2; // global int constant which will be used to
                                    // tell the program which model is called
   NNeutralHiggs = 3; // number of neutral Higgs bosons at T = 0
   NChargedHiggs = 2; // number of charged Higgs bosons  at T = 0 (all d.o.f.)
 
-  nPar   = 4; // number of independent input parameters (in the tree-Level Lagrangian)
-  nParCT = 10; // number of parameters in the counterterm potential
+  nPar   = 6; // number of independent input parameters (in the tree-Level Lagrangian)
+  nParCT = 12; // number of parameters in the counterterm potential
 
   nVEV = 2; // number of VEVs to minimize the potential
 
@@ -73,11 +73,13 @@ Class_RxSM::~Class_RxSM()
 std::vector<std::string> Class_RxSM::addLegendCT() const
 {
   std::vector<std::string> labels;
-  labels.push_back("dmsq");
-  labels.push_back("dlambda");
-  labels.push_back("dmSsq");
-  labels.push_back("dlambdaS");
-  labels.push_back("dlambdaHS");
+  labels.push_back("dmusq");
+  labels.push_back("dlam");
+  labels.push_back("da1");
+  labels.push_back("da2");
+  labels.push_back("db2");
+  labels.push_back("db3");
+  labels.push_back("db4");
   labels.push_back("dT1");
   labels.push_back("dT2");
   labels.push_back("dT3");
@@ -163,29 +165,35 @@ void Class_RxSM::ReadAndSet(const std::string &linestr,
   std::stringstream ss(linestr);
   double tmp;
 
-  double lambdaSIn{0}, lambdaHSIn{0}, vSIn{0}, MassSIn{0};
+  double lamIn{0}, a1In{0}, a2In{0}, b3In{0}, b4In{0}, vSIn{0};
 
   if (UseIndexCol)
   {
     ss >> tmp;
   }
 
-  for (int k = 1; k <= 4; ++k)
+  for (int k = 1; k <= 6; ++k)
   {
     ss >> tmp;
     if (k == 1)
-      lambdaSIn = tmp;
+      lamIn = tmp;
     else if (k == 2)
-      lambdaHSIn = tmp;
+      a1In = tmp;
     else if (k == 3)
-      vSIn = tmp;
+      a2In = tmp;
     else if (k == 4)
-      MassSIn = tmp;
+      b3In = tmp;
+    else if (k == 5)
+      b4In = tmp;
+    else if (k == 6)
+      vSIn = tmp;
   }
-  par[0] = lambdaSIn;
-  par[1] = lambdaHSIn;
-  par[2] = vSIn;
-  par[3] = MassSIn;
+  par[0] = lamIn;
+  par[1] = a1In;
+  par[2] = a2In;
+  par[3] = b3In;
+  par[4] = b4In;
+  par[5] = vSIn;
 
   set_gen(par); // This you have to call so that everything will be set
   return;
@@ -197,49 +205,26 @@ void Class_RxSM::ReadAndSet(const std::string &linestr,
  */
 void Class_RxSM::set_gen(const std::vector<double> &par)
 {
-  lambdaS      = par[0];
-  lambdaHS     = par[1];
-  vS           = par[2];
-  double MassS = par[3]; // this input is only used if vS == 0
+  lam = par[0];
+  a1  = par[1];
+  a2  = par[2];
+  b3  = par[3];
+  b4  = par[4];
+  vS  = par[5];
 
   const double ZeroThreshold = 1e-5;
 
   UnbrokenSingletPhase = false;
   if (std::abs(vS) < ZeroThreshold)
   {
-    UnbrokenSingletPhase = true;
-    vS = 0.;
+    std::cout << "Currently not implemented." << std::endl;
   }
 
   vH = SMConstants.C_vev0;
 
-  double mh2 = SMConstants.C_MassSMHiggs*SMConstants.C_MassSMHiggs;
-
-  // Fix lambda via the condition that one of the Higgses must be SM-like
-  // Computed with Mathematica from diagonalising the 2x2 mass matrix and
-  // then solving for lambda when fixing one mass to mh = 125.09 GeV
-
-  // Be careful when the denominator = 0, i.e. when vS*vS*lambdaS == 3*mh2;
-  // this is the point where the SM-like state switches from being the
-  // heavier or lighter one to the corresponding other one
-  if (std::abs(vS*vS*lambdaS - 3*mh2) < ZeroThreshold)
-  {
-    throw std::runtime_error("Invalid parameter point, lambda is divergent.");
-  }
-
-  lambda = 2*mh2/vH/vH + 6*vS*vS*lambdaHS*lambdaHS/(vS*vS*lambdaS - 3*mh2);
-
   // Tree-level tadpole equations
-  msq  = -lambda*vH*vH/2.  - lambdaHS*vS*vS;
-
-  if (UnbrokenSingletPhase)
-  {
-    mSsq = MassS*MassS - lambdaHS*vH*vH/2.;
-  }
-  else
-  {
-    mSsq = -lambdaS*vS*vS/6. - lambdaHS*vH*vH/2.;
-  }
+  musq = (1.0/2.0)*a1*vS + (1.0/2.0)*a2*std::pow(vS, 2) + lam*std::pow(vH, 2);
+  b2 = -1.0/4.0*a1*std::pow(vH, 2)/vS - 1.0/2.0*a2*std::pow(vH, 2) - b3*vS - b4*std::pow(vS, 2);
 
   scale = vH; // Renormalisation scale is set to the SM VEV
 
@@ -259,94 +244,111 @@ void Class_RxSM::set_gen(const std::vector<double> &par)
 void Class_RxSM::set_CT_Pot_Par(const std::vector<double> &par)
 {
 
-  dmsq      = par[0];
-  dlambda   = par[1];
-  dmSsq     = par[2];
-  dlambdaS  = par[3];
-  dlambdaHS = par[4];
-  dT1       = par[5];
-  dT2       = par[6];
-  dT3       = par[7];
-  dT4       = par[8];
-  dT5       = par[9];
+  dmusq = par.at(0);
+  dlam = par.at(1);
+  da1 = par.at(2);
+  da2 = par.at(3);
+  db2 = par.at(4);
+  db3 = par.at(5);
+  db4 = par.at(6);
+  dT1 = par.at(7);
+  dT2 = par.at(8);
+  dT3 = par.at(9);
+  dT4 = par.at(10);
+  dT5 = par.at(11);
 
-  Curvature_Higgs_CT_L1[0] = dT1;
-  Curvature_Higgs_CT_L1[1] = dT2;
-  Curvature_Higgs_CT_L1[2] = dT3;
-  Curvature_Higgs_CT_L1[3] = dT4;
-  Curvature_Higgs_CT_L1[4] = dT5;
+  Curvature_Higgs_CT_L1.at(0) = dT1;
+  Curvature_Higgs_CT_L1.at(1) = dT2;
+  Curvature_Higgs_CT_L1.at(2) = dT3;
+  Curvature_Higgs_CT_L1.at(3) = dT4;
+  Curvature_Higgs_CT_L1.at(4) = dT5;
 
-  Curvature_Higgs_CT_L2[0][0] = dmsq / 0.2e1;
-  Curvature_Higgs_CT_L2[1][1] = dmsq / 0.2e1;
-  Curvature_Higgs_CT_L2[2][2] = dmsq / 0.2e1;
-  Curvature_Higgs_CT_L2[3][3] = dmsq / 0.2e1;
-  Curvature_Higgs_CT_L2[4][4] = dmSsq;
+  Curvature_Higgs_CT_L2.at(0).at(0) = -dmusq;
+  Curvature_Higgs_CT_L2.at(1).at(1) = -dmusq;
+  Curvature_Higgs_CT_L2.at(2).at(2) = -dmusq;
+  Curvature_Higgs_CT_L2.at(3).at(3) = -dmusq;
+  Curvature_Higgs_CT_L2.at(4).at(4) = db2;
 
-  Curvature_Higgs_CT_L4[0][0][0][0] = 0.3e1 / 0.2e1 * dlambda;
-  Curvature_Higgs_CT_L4[0][0][1][1] = dlambda / 0.2e1;
-  Curvature_Higgs_CT_L4[0][0][2][2] = dlambda / 0.2e1;
-  Curvature_Higgs_CT_L4[0][0][3][3] = dlambda / 0.2e1;
-  Curvature_Higgs_CT_L4[0][0][4][4] = dlambdaHS;
-  Curvature_Higgs_CT_L4[0][1][0][1] = dlambda / 0.2e1;
-  Curvature_Higgs_CT_L4[0][1][1][0] = dlambda / 0.2e1;
-  Curvature_Higgs_CT_L4[0][2][0][2] = dlambda / 0.2e1;
-  Curvature_Higgs_CT_L4[0][2][2][0] = dlambda / 0.2e1;
-  Curvature_Higgs_CT_L4[0][3][0][3] = dlambda / 0.2e1;
-  Curvature_Higgs_CT_L4[0][3][3][0] = dlambda / 0.2e1;
-  Curvature_Higgs_CT_L4[0][4][0][4] = dlambdaHS;
-  Curvature_Higgs_CT_L4[0][4][4][0] = dlambdaHS;
-  Curvature_Higgs_CT_L4[1][0][0][1] = dlambda / 0.2e1;
-  Curvature_Higgs_CT_L4[1][0][1][0] = dlambda / 0.2e1;
-  Curvature_Higgs_CT_L4[1][1][0][0] = dlambda / 0.2e1;
-  Curvature_Higgs_CT_L4[1][1][1][1] = 0.3e1 / 0.2e1 * dlambda;
-  Curvature_Higgs_CT_L4[1][1][2][2] = dlambda / 0.2e1;
-  Curvature_Higgs_CT_L4[1][1][3][3] = dlambda / 0.2e1;
-  Curvature_Higgs_CT_L4[1][1][4][4] = dlambdaHS;
-  Curvature_Higgs_CT_L4[1][2][1][2] = dlambda / 0.2e1;
-  Curvature_Higgs_CT_L4[1][2][2][1] = dlambda / 0.2e1;
-  Curvature_Higgs_CT_L4[1][3][1][3] = dlambda / 0.2e1;
-  Curvature_Higgs_CT_L4[1][3][3][1] = dlambda / 0.2e1;
-  Curvature_Higgs_CT_L4[1][4][1][4] = dlambdaHS;
-  Curvature_Higgs_CT_L4[1][4][4][1] = dlambdaHS;
-  Curvature_Higgs_CT_L4[2][0][0][2] = dlambda / 0.2e1;
-  Curvature_Higgs_CT_L4[2][0][2][0] = dlambda / 0.2e1;
-  Curvature_Higgs_CT_L4[2][1][1][2] = dlambda / 0.2e1;
-  Curvature_Higgs_CT_L4[2][1][2][1] = dlambda / 0.2e1;
-  Curvature_Higgs_CT_L4[2][2][0][0] = dlambda / 0.2e1;
-  Curvature_Higgs_CT_L4[2][2][1][1] = dlambda / 0.2e1;
-  Curvature_Higgs_CT_L4[2][2][2][2] = 0.3e1 / 0.2e1 * dlambda;
-  Curvature_Higgs_CT_L4[2][2][3][3] = dlambda / 0.2e1;
-  Curvature_Higgs_CT_L4[2][2][4][4] = dlambdaHS;
-  Curvature_Higgs_CT_L4[2][3][2][3] = dlambda / 0.2e1;
-  Curvature_Higgs_CT_L4[2][3][3][2] = dlambda / 0.2e1;
-  Curvature_Higgs_CT_L4[2][4][2][4] = dlambdaHS;
-  Curvature_Higgs_CT_L4[2][4][4][2] = dlambdaHS;
-  Curvature_Higgs_CT_L4[3][0][0][3] = dlambda / 0.2e1;
-  Curvature_Higgs_CT_L4[3][0][3][0] = dlambda / 0.2e1;
-  Curvature_Higgs_CT_L4[3][1][1][3] = dlambda / 0.2e1;
-  Curvature_Higgs_CT_L4[3][1][3][1] = dlambda / 0.2e1;
-  Curvature_Higgs_CT_L4[3][2][2][3] = dlambda / 0.2e1;
-  Curvature_Higgs_CT_L4[3][2][3][2] = dlambda / 0.2e1;
-  Curvature_Higgs_CT_L4[3][3][0][0] = dlambda / 0.2e1;
-  Curvature_Higgs_CT_L4[3][3][1][1] = dlambda / 0.2e1;
-  Curvature_Higgs_CT_L4[3][3][2][2] = dlambda / 0.2e1;
-  Curvature_Higgs_CT_L4[3][3][3][3] = 0.3e1 / 0.2e1 * dlambda;
-  Curvature_Higgs_CT_L4[3][3][4][4] = dlambdaHS;
-  Curvature_Higgs_CT_L4[3][4][3][4] = dlambdaHS;
-  Curvature_Higgs_CT_L4[3][4][4][3] = dlambdaHS;
-  Curvature_Higgs_CT_L4[4][0][0][4] = dlambdaHS;
-  Curvature_Higgs_CT_L4[4][0][4][0] = dlambdaHS;
-  Curvature_Higgs_CT_L4[4][1][1][4] = dlambdaHS;
-  Curvature_Higgs_CT_L4[4][1][4][1] = dlambdaHS;
-  Curvature_Higgs_CT_L4[4][2][2][4] = dlambdaHS;
-  Curvature_Higgs_CT_L4[4][2][4][2] = dlambdaHS;
-  Curvature_Higgs_CT_L4[4][3][3][4] = dlambdaHS;
-  Curvature_Higgs_CT_L4[4][3][4][3] = dlambdaHS;
-  Curvature_Higgs_CT_L4[4][4][0][0] = dlambdaHS;
-  Curvature_Higgs_CT_L4[4][4][1][1] = dlambdaHS;
-  Curvature_Higgs_CT_L4[4][4][2][2] = dlambdaHS;
-  Curvature_Higgs_CT_L4[4][4][3][3] = dlambdaHS;
-  Curvature_Higgs_CT_L4[4][4][4][4] = dlambdaS;
+  Curvature_Higgs_CT_L3.at(0).at(0).at(4) = (1.0/2.0)*da1;
+  Curvature_Higgs_CT_L3.at(0).at(4).at(0) = (1.0/2.0)*da1;
+  Curvature_Higgs_CT_L3.at(1).at(1).at(4) = (1.0/2.0)*da1;
+  Curvature_Higgs_CT_L3.at(1).at(4).at(1) = (1.0/2.0)*da1;
+  Curvature_Higgs_CT_L3.at(2).at(2).at(4) = (1.0/2.0)*da1;
+  Curvature_Higgs_CT_L3.at(2).at(4).at(2) = (1.0/2.0)*da1;
+  Curvature_Higgs_CT_L3.at(3).at(3).at(4) = (1.0/2.0)*da1;
+  Curvature_Higgs_CT_L3.at(3).at(4).at(3) = (1.0/2.0)*da1;
+  Curvature_Higgs_CT_L3.at(4).at(0).at(0) = (1.0/2.0)*da1;
+  Curvature_Higgs_CT_L3.at(4).at(1).at(1) = (1.0/2.0)*da1;
+  Curvature_Higgs_CT_L3.at(4).at(2).at(2) = (1.0/2.0)*da1;
+  Curvature_Higgs_CT_L3.at(4).at(3).at(3) = (1.0/2.0)*da1;
+  Curvature_Higgs_CT_L3.at(4).at(4).at(4) = 2*db3;
+
+  Curvature_Higgs_CT_L4.at(0).at(0).at(0).at(0) = 6*dlam;
+  Curvature_Higgs_CT_L4.at(0).at(0).at(1).at(1) = 2*dlam;
+  Curvature_Higgs_CT_L4.at(0).at(0).at(2).at(2) = 2*dlam;
+  Curvature_Higgs_CT_L4.at(0).at(0).at(3).at(3) = 2*dlam;
+  Curvature_Higgs_CT_L4.at(0).at(0).at(4).at(4) = da2;
+  Curvature_Higgs_CT_L4.at(0).at(1).at(0).at(1) = 2*dlam;
+  Curvature_Higgs_CT_L4.at(0).at(1).at(1).at(0) = 2*dlam;
+  Curvature_Higgs_CT_L4.at(0).at(2).at(0).at(2) = 2*dlam;
+  Curvature_Higgs_CT_L4.at(0).at(2).at(2).at(0) = 2*dlam;
+  Curvature_Higgs_CT_L4.at(0).at(3).at(0).at(3) = 2*dlam;
+  Curvature_Higgs_CT_L4.at(0).at(3).at(3).at(0) = 2*dlam;
+  Curvature_Higgs_CT_L4.at(0).at(4).at(0).at(4) = da2;
+  Curvature_Higgs_CT_L4.at(0).at(4).at(4).at(0) = da2;
+  Curvature_Higgs_CT_L4.at(1).at(0).at(0).at(1) = 2*dlam;
+  Curvature_Higgs_CT_L4.at(1).at(0).at(1).at(0) = 2*dlam;
+  Curvature_Higgs_CT_L4.at(1).at(1).at(0).at(0) = 2*dlam;
+  Curvature_Higgs_CT_L4.at(1).at(1).at(1).at(1) = 6*dlam;
+  Curvature_Higgs_CT_L4.at(1).at(1).at(2).at(2) = 2*dlam;
+  Curvature_Higgs_CT_L4.at(1).at(1).at(3).at(3) = 2*dlam;
+  Curvature_Higgs_CT_L4.at(1).at(1).at(4).at(4) = da2;
+  Curvature_Higgs_CT_L4.at(1).at(2).at(1).at(2) = 2*dlam;
+  Curvature_Higgs_CT_L4.at(1).at(2).at(2).at(1) = 2*dlam;
+  Curvature_Higgs_CT_L4.at(1).at(3).at(1).at(3) = 2*dlam;
+  Curvature_Higgs_CT_L4.at(1).at(3).at(3).at(1) = 2*dlam;
+  Curvature_Higgs_CT_L4.at(1).at(4).at(1).at(4) = da2;
+  Curvature_Higgs_CT_L4.at(1).at(4).at(4).at(1) = da2;
+  Curvature_Higgs_CT_L4.at(2).at(0).at(0).at(2) = 2*dlam;
+  Curvature_Higgs_CT_L4.at(2).at(0).at(2).at(0) = 2*dlam;
+  Curvature_Higgs_CT_L4.at(2).at(1).at(1).at(2) = 2*dlam;
+  Curvature_Higgs_CT_L4.at(2).at(1).at(2).at(1) = 2*dlam;
+  Curvature_Higgs_CT_L4.at(2).at(2).at(0).at(0) = 2*dlam;
+  Curvature_Higgs_CT_L4.at(2).at(2).at(1).at(1) = 2*dlam;
+  Curvature_Higgs_CT_L4.at(2).at(2).at(2).at(2) = 6*dlam;
+  Curvature_Higgs_CT_L4.at(2).at(2).at(3).at(3) = 2*dlam;
+  Curvature_Higgs_CT_L4.at(2).at(2).at(4).at(4) = da2;
+  Curvature_Higgs_CT_L4.at(2).at(3).at(2).at(3) = 2*dlam;
+  Curvature_Higgs_CT_L4.at(2).at(3).at(3).at(2) = 2*dlam;
+  Curvature_Higgs_CT_L4.at(2).at(4).at(2).at(4) = da2;
+  Curvature_Higgs_CT_L4.at(2).at(4).at(4).at(2) = da2;
+  Curvature_Higgs_CT_L4.at(3).at(0).at(0).at(3) = 2*dlam;
+  Curvature_Higgs_CT_L4.at(3).at(0).at(3).at(0) = 2*dlam;
+  Curvature_Higgs_CT_L4.at(3).at(1).at(1).at(3) = 2*dlam;
+  Curvature_Higgs_CT_L4.at(3).at(1).at(3).at(1) = 2*dlam;
+  Curvature_Higgs_CT_L4.at(3).at(2).at(2).at(3) = 2*dlam;
+  Curvature_Higgs_CT_L4.at(3).at(2).at(3).at(2) = 2*dlam;
+  Curvature_Higgs_CT_L4.at(3).at(3).at(0).at(0) = 2*dlam;
+  Curvature_Higgs_CT_L4.at(3).at(3).at(1).at(1) = 2*dlam;
+  Curvature_Higgs_CT_L4.at(3).at(3).at(2).at(2) = 2*dlam;
+  Curvature_Higgs_CT_L4.at(3).at(3).at(3).at(3) = 6*dlam;
+  Curvature_Higgs_CT_L4.at(3).at(3).at(4).at(4) = da2;
+  Curvature_Higgs_CT_L4.at(3).at(4).at(3).at(4) = da2;
+  Curvature_Higgs_CT_L4.at(3).at(4).at(4).at(3) = da2;
+  Curvature_Higgs_CT_L4.at(4).at(0).at(0).at(4) = da2;
+  Curvature_Higgs_CT_L4.at(4).at(0).at(4).at(0) = da2;
+  Curvature_Higgs_CT_L4.at(4).at(1).at(1).at(4) = da2;
+  Curvature_Higgs_CT_L4.at(4).at(1).at(4).at(1) = da2;
+  Curvature_Higgs_CT_L4.at(4).at(2).at(2).at(4) = da2;
+  Curvature_Higgs_CT_L4.at(4).at(2).at(4).at(2) = da2;
+  Curvature_Higgs_CT_L4.at(4).at(3).at(3).at(4) = da2;
+  Curvature_Higgs_CT_L4.at(4).at(3).at(4).at(3) = da2;
+  Curvature_Higgs_CT_L4.at(4).at(4).at(0).at(0) = da2;
+  Curvature_Higgs_CT_L4.at(4).at(4).at(1).at(1) = da2;
+  Curvature_Higgs_CT_L4.at(4).at(4).at(2).at(2) = da2;
+  Curvature_Higgs_CT_L4.at(4).at(4).at(3).at(3) = da2;
+  Curvature_Higgs_CT_L4.at(4).at(4).at(4).at(4) = 6*db4;
+
 }
 
 /**
@@ -359,26 +361,29 @@ void Class_RxSM::write() const
   ss << "Model = " << Model << std::endl;
 
   ss << "The parameters are : " << std::endl;
-  ss << "lambda    = " << lambda << " (fixed via requirement of "
-     << "SM Higgs mass == 125.09 GeV)" << std::endl
-     << "lambda_S  = " << lambdaS << std::endl
-     << "lambda_HS = " << lambdaHS << std::endl
-     << "v_S       = " << vS << std::endl
-     << "v_H       = " << vH << " (fixed to SM value)" << std::endl
-     << "m^2       = " << msq << " (via tadpole eqs.)" << std::endl
-     << "ms^2      = " << mSsq << " (via tadpole eqs.)" << std::endl;
+  ss << "lam  = " << lam << std::endl
+     << "a_1  = " << a1 << std::endl
+     << "a_2  = " << a2 << std::endl
+     << "b_3  = " << b3 << std::endl
+     << "b_4  = " << b4 << std::endl
+     << "v_S  = " << vS << std::endl
+     << "v_H  = " << vH << " (fixed to SM value)" << std::endl
+     << "mu^2 = " << musq << " (via tadpole eqs.)" << std::endl
+     << "b_2  = " << b2 << " (via tadpole eqs.)" << std::endl;
 
   ss << "The counterterm parameters are : " << std::endl;
-  ss << "dm^2       = " << dmsq << std::endl
-     << "dlambda    = " << dlambda << std::endl
-     << "dms^2      = " << dmSsq << std::endl
-     << "dlambda_S  = " << dlambdaS << std::endl
-     << "dlambda_HS = " << dlambdaHS << std::endl
-     << "dT1        = " << dT1 << std::endl
-     << "dT2        = " << dT2 << std::endl
-     << "dT3        = " << dT3 << std::endl
-     << "dT4        = " << dT4 << std::endl
-     << "dT5        = " << dT5 << std::endl;
+  ss << "dmu^2 = " << dmusq << std::endl
+     << "dlam  = " << dlam << std::endl
+     << "da1   = " << da1 << std::endl
+     << "da2   = " << da2 << std::endl
+     << "db2   = " << db2 << std::endl
+     << "db3   = " << db3 << std::endl
+     << "db4   = " << db4 << std::endl
+     << "dT1   = " << dT1 << std::endl
+     << "dT2   = " << dT2 << std::endl
+     << "dT3   = " << dT3 << std::endl
+     << "dT4   = " << dT4 << std::endl
+     << "dT5   = " << dT5 << std::endl;
 
   ss << "The scale is given by mu = " << scale << " GeV " << std::endl;
 
@@ -458,81 +463,68 @@ std::vector<double> Class_RxSM::calc_CT() const
 
   if (UnbrokenSingletPhase)
   {
-    // Free parameters t4 and t5 chosen such that dlambdaS = dlambdaHS = 0
-
-    // dmsq
-    parCT.push_back(-3*HesseWeinberg(2, 2) + HesseWeinberg(3, 3));
-
-    // dlambda
-    parCT.push_back((2*HesseWeinberg(2, 2) - 2*HesseWeinberg(3, 3))/vH/vH);
-
-    // dmSsq
-    parCT.push_back(-HesseWeinberg(4, 4));
-
-    // dlambdaS
-    parCT.push_back(0);
-
-    // dlambdaHS
-    parCT.push_back(0);
-
-    // dT1
-    parCT.push_back(-NablaWeinberg(0));
-
-    // dT2
-    parCT.push_back(-NablaWeinberg(1));
-
-    // dT3
-    parCT.push_back(-NablaWeinberg(2));
-
-    // dT4
-    parCT.push_back(HesseWeinberg(2, 2)*vH - NablaWeinberg(3));
-
-    // dT5
-    parCT.push_back(-NablaWeinberg(4));
+    std::cout << "Currently not implemented." << std::endl;
   }
   else
   {
     // Free parameter t chosen such that all tadpole CTs vanish
 
-    // dmsq
-    parCT.push_back((-3*HesseWeinberg(2, 2)*vH
-                     + HesseWeinberg(3, 3)*vH
-                     + HesseWeinberg(3, 4)*vS)/vH);
+    // // ren-1: db3 = db4 = 0
+    // parCT.push_back((3.0/2.0)*HesseWeinberg(2,2) - 1.0/2.0*HesseWeinberg(3,3) - 1.0/2.0*HesseWeinberg(3,4)*vS/vH + HesseWeinberg(4,4)*std::pow(vS, 2)/std::pow(vH, 2) - NablaWeinberg(4)*vS/std::pow(vH, 2)); //dmusq
+    // parCT.push_back((1.0/2.0)*HesseWeinberg(2,2)/std::pow(vH, 2) - 1.0/2.0*HesseWeinberg(3,3)/std::pow(vH, 2)); //dlam
+    // parCT.push_back(4*HesseWeinberg(4,4)*vS/std::pow(vH, 2) - 4*NablaWeinberg(4)/std::pow(vH, 2)); //da1
+    // parCT.push_back(-HesseWeinberg(3,4)/(vH*vS) - 2*HesseWeinberg(4,4)/std::pow(vH, 2) + 2*NablaWeinberg(4)/(std::pow(vH, 2)*vS)); //da2
+    // parCT.push_back((1.0/2.0)*HesseWeinberg(3,4)*vH/vS - NablaWeinberg(4)/vS); //db2
+    // parCT.push_back(0); //db3
+    // parCT.push_back(0); //db4
+    // parCT.push_back(-NablaWeinberg(0)); //dT1
+    // parCT.push_back(-NablaWeinberg(1)); //dT2
+    // parCT.push_back(-NablaWeinberg(2)); //dT3
+    // parCT.push_back(HesseWeinberg(2,2)*vH - NablaWeinberg(3)); //dT4
+    // parCT.push_back(0); //dT5
 
-    // dlambda
-    parCT.push_back((2*HesseWeinberg(2, 2)
-                     - 2*HesseWeinberg(3, 3))/vH/vH);
+    // // ren-2: dmusq = db2 = 0
+    // parCT.push_back(0); //dmusq
+    // parCT.push_back((1.0/2.0)*HesseWeinberg(2,2)/std::pow(vH, 2) - 1.0/2.0*HesseWeinberg(3,3)/std::pow(vH, 2)); //dlam
+    // parCT.push_back(-6*HesseWeinberg(2,2)/vS + 2*HesseWeinberg(3,3)/vS + 2*HesseWeinberg(3,4)/vH); //da1
+    // parCT.push_back(3*HesseWeinberg(2,2)/std::pow(vS, 2) - HesseWeinberg(3,3)/std::pow(vS, 2) - 2*HesseWeinberg(3,4)/(vH*vS)); //da2
+    // parCT.push_back(0); //db2
+    // parCT.push_back((3.0/2.0)*HesseWeinberg(2,2)*std::pow(vH, 2)/std::pow(vS, 3) - 1.0/2.0*HesseWeinberg(3,3)*std::pow(vH, 2)/std::pow(vS, 3) + (1.0/2.0)*HesseWeinberg(3,4)*vH/std::pow(vS, 2) + HesseWeinberg(4,4)/vS - 3*NablaWeinberg(4)/std::pow(vS, 2)); //db3
+    // parCT.push_back(-3.0/2.0*HesseWeinberg(2,2)*std::pow(vH, 2)/std::pow(vS, 4) + (1.0/2.0)*HesseWeinberg(3,3)*std::pow(vH, 2)/std::pow(vS, 4) - HesseWeinberg(4,4)/std::pow(vS, 2) + 2*NablaWeinberg(4)/std::pow(vS, 3)); //db4
+    // parCT.push_back(-NablaWeinberg(0)); //dT1
+    // parCT.push_back(-NablaWeinberg(1)); //dT2
+    // parCT.push_back(-NablaWeinberg(2)); //dT3
+    // parCT.push_back(HesseWeinberg(2,2)*vH - NablaWeinberg(3)); //dT4
+    // parCT.push_back(0); //dT5
 
-    // dmSsq
-    // parCT.push_back((HesseWeinberg(3, 4)*vH/2
-    //                  - HesseWeinberg(4, 4)*vS)/vS);
-    parCT.push_back((HesseWeinberg(3, 4)*vH
-                     + HesseWeinberg(4, 4)*vS
-                     - 3*NablaWeinberg(4))/vS/2);
+    // // ren-3: da2 = db3 = 0
+    // parCT.push_back((3.0/2.0)*HesseWeinberg(2,2) - 1.0/2.0*HesseWeinberg(3,3) - HesseWeinberg(3,4)*vS/vH); //dmusq
+    // parCT.push_back((1.0/2.0)*HesseWeinberg(2,2)/std::pow(vH, 2) - 1.0/2.0*HesseWeinberg(3,3)/std::pow(vH, 2)); //dlam
+    // parCT.push_back(-2*HesseWeinberg(3,4)/vH); //da1
+    // parCT.push_back(0); //da2
+    // parCT.push_back((3.0/4.0)*HesseWeinberg(3,4)*vH/vS + (1.0/2.0)*HesseWeinberg(4,4) - 3.0/2.0*NablaWeinberg(4)/vS); //db2
+    // parCT.push_back(0); //db3
+    // parCT.push_back(-1.0/4.0*HesseWeinberg(3,4)*vH/std::pow(vS, 3) - 1.0/2.0*HesseWeinberg(4,4)/std::pow(vS, 2) + (1.0/2.0)*NablaWeinberg(4)/std::pow(vS, 3)); //db4
+    // parCT.push_back(-NablaWeinberg(0)); //dT1
+    // parCT.push_back(-NablaWeinberg(1)); //dT2
+    // parCT.push_back(-NablaWeinberg(2)); //dT3
+    // parCT.push_back(HesseWeinberg(2,2)*vH - NablaWeinberg(3)); //dT4
+    // parCT.push_back(0); //dT5
 
-    // dlambdaS
-    // parCT.push_back(0);
-    parCT.push_back((-3*HesseWeinberg(4, 4)*vS
-                     + 3*NablaWeinberg(4))*pow(vS, -3));
+    // ren-4: da2 = db4 = 0
+    parCT.push_back((3.0/2.0)*HesseWeinberg(2,2) - 1.0/2.0*HesseWeinberg(3,3) - HesseWeinberg(3,4)*vS/vH); //dmusq
+    parCT.push_back((1.0/2.0)*HesseWeinberg(2,2)/std::pow(vH, 2) - 1.0/2.0*HesseWeinberg(3,3)/std::pow(vH, 2)); //dlam
+    parCT.push_back(-2*HesseWeinberg(3,4)/vH); //da1
+    parCT.push_back(0); //da2
+    parCT.push_back(HesseWeinberg(3,4)*vH/vS + HesseWeinberg(4,4) - 2*NablaWeinberg(4)/vS); //db2
+    parCT.push_back(-1.0/2.0*HesseWeinberg(3,4)*vH/std::pow(vS, 2) - HesseWeinberg(4,4)/vS + NablaWeinberg(4)/std::pow(vS, 2)); //db3
+    parCT.push_back(0); //db4
+    parCT.push_back(-NablaWeinberg(0)); //dT1
+    parCT.push_back(-NablaWeinberg(1)); //dT2
+    parCT.push_back(-NablaWeinberg(2)); //dT3
+    parCT.push_back(HesseWeinberg(2,2)*vH - NablaWeinberg(3)); //dT4
+    parCT.push_back(0); //dT5
 
-    // dlambdaHS
-    parCT.push_back(-HesseWeinberg(3, 4)/vH/vS);
-
-    // dT1
-    parCT.push_back(-NablaWeinberg(0));
-
-    // dT2
-    parCT.push_back(-NablaWeinberg(1));
-
-    // dT3
-    parCT.push_back(-NablaWeinberg(2));
-
-    // dT4
-    parCT.push_back(HesseWeinberg(2, 2)*vH - NablaWeinberg(3));
-
-    // dT5
-    // parCT.push_back(HesseWeinberg(4, 4)*vS - NablaWeinberg(4));
-    parCT.push_back(0);
   }
 
   return parCT;
@@ -811,263 +803,265 @@ void Class_RxSM::SetCurvatureArrays()
   for (std::size_t i = 0; i < NHiggs; i++)
     HiggsVev[i] = vevTree[i];
 
-  Curvature_Higgs_L2[0][0] = msq / 0.2e1;
-  Curvature_Higgs_L2[1][1] = msq / 0.2e1;
-  Curvature_Higgs_L2[2][2] = msq / 0.2e1;
-  Curvature_Higgs_L2[3][3] = msq / 0.2e1;
-  Curvature_Higgs_L2[4][4] = mSsq;
+  Curvature_Higgs_L2.at(0).at(0) = -musq;
+  Curvature_Higgs_L2.at(1).at(1) = -musq;
+  Curvature_Higgs_L2.at(2).at(2) = -musq;
+  Curvature_Higgs_L2.at(3).at(3) = -musq;
+  Curvature_Higgs_L2.at(4).at(4) = b2;
 
-  Curvature_Higgs_L4[0][0][0][0] = 0.3e1 / 0.2e1 * lambda;
-  Curvature_Higgs_L4[0][0][1][1] = lambda / 0.2e1;
-  Curvature_Higgs_L4[0][0][2][2] = lambda / 0.2e1;
-  Curvature_Higgs_L4[0][0][3][3] = lambda / 0.2e1;
-  Curvature_Higgs_L4[0][0][4][4] = lambdaHS;
-  Curvature_Higgs_L4[0][1][0][1] = lambda / 0.2e1;
-  Curvature_Higgs_L4[0][1][1][0] = lambda / 0.2e1;
-  Curvature_Higgs_L4[0][2][0][2] = lambda / 0.2e1;
-  Curvature_Higgs_L4[0][2][2][0] = lambda / 0.2e1;
-  Curvature_Higgs_L4[0][3][0][3] = lambda / 0.2e1;
-  Curvature_Higgs_L4[0][3][3][0] = lambda / 0.2e1;
-  Curvature_Higgs_L4[0][4][0][4] = lambdaHS;
-  Curvature_Higgs_L4[0][4][4][0] = lambdaHS;
-  Curvature_Higgs_L4[1][0][0][1] = lambda / 0.2e1;
-  Curvature_Higgs_L4[1][0][1][0] = lambda / 0.2e1;
-  Curvature_Higgs_L4[1][1][0][0] = lambda / 0.2e1;
-  Curvature_Higgs_L4[1][1][1][1] = 0.3e1 / 0.2e1 * lambda;
-  Curvature_Higgs_L4[1][1][2][2] = lambda / 0.2e1;
-  Curvature_Higgs_L4[1][1][3][3] = lambda / 0.2e1;
-  Curvature_Higgs_L4[1][1][4][4] = lambdaHS;
-  Curvature_Higgs_L4[1][2][1][2] = lambda / 0.2e1;
-  Curvature_Higgs_L4[1][2][2][1] = lambda / 0.2e1;
-  Curvature_Higgs_L4[1][3][1][3] = lambda / 0.2e1;
-  Curvature_Higgs_L4[1][3][3][1] = lambda / 0.2e1;
-  Curvature_Higgs_L4[1][4][1][4] = lambdaHS;
-  Curvature_Higgs_L4[1][4][4][1] = lambdaHS;
-  Curvature_Higgs_L4[2][0][0][2] = lambda / 0.2e1;
-  Curvature_Higgs_L4[2][0][2][0] = lambda / 0.2e1;
-  Curvature_Higgs_L4[2][1][1][2] = lambda / 0.2e1;
-  Curvature_Higgs_L4[2][1][2][1] = lambda / 0.2e1;
-  Curvature_Higgs_L4[2][2][0][0] = lambda / 0.2e1;
-  Curvature_Higgs_L4[2][2][1][1] = lambda / 0.2e1;
-  Curvature_Higgs_L4[2][2][2][2] = 0.3e1 / 0.2e1 * lambda;
-  Curvature_Higgs_L4[2][2][3][3] = lambda / 0.2e1;
-  Curvature_Higgs_L4[2][2][4][4] = lambdaHS;
-  Curvature_Higgs_L4[2][3][2][3] = lambda / 0.2e1;
-  Curvature_Higgs_L4[2][3][3][2] = lambda / 0.2e1;
-  Curvature_Higgs_L4[2][4][2][4] = lambdaHS;
-  Curvature_Higgs_L4[2][4][4][2] = lambdaHS;
-  Curvature_Higgs_L4[3][0][0][3] = lambda / 0.2e1;
-  Curvature_Higgs_L4[3][0][3][0] = lambda / 0.2e1;
-  Curvature_Higgs_L4[3][1][1][3] = lambda / 0.2e1;
-  Curvature_Higgs_L4[3][1][3][1] = lambda / 0.2e1;
-  Curvature_Higgs_L4[3][2][2][3] = lambda / 0.2e1;
-  Curvature_Higgs_L4[3][2][3][2] = lambda / 0.2e1;
-  Curvature_Higgs_L4[3][3][0][0] = lambda / 0.2e1;
-  Curvature_Higgs_L4[3][3][1][1] = lambda / 0.2e1;
-  Curvature_Higgs_L4[3][3][2][2] = lambda / 0.2e1;
-  Curvature_Higgs_L4[3][3][3][3] = 0.3e1 / 0.2e1 * lambda;
-  Curvature_Higgs_L4[3][3][4][4] = lambdaHS;
-  Curvature_Higgs_L4[3][4][3][4] = lambdaHS;
-  Curvature_Higgs_L4[3][4][4][3] = lambdaHS;
-  Curvature_Higgs_L4[4][0][0][4] = lambdaHS;
-  Curvature_Higgs_L4[4][0][4][0] = lambdaHS;
-  Curvature_Higgs_L4[4][1][1][4] = lambdaHS;
-  Curvature_Higgs_L4[4][1][4][1] = lambdaHS;
-  Curvature_Higgs_L4[4][2][2][4] = lambdaHS;
-  Curvature_Higgs_L4[4][2][4][2] = lambdaHS;
-  Curvature_Higgs_L4[4][3][3][4] = lambdaHS;
-  Curvature_Higgs_L4[4][3][4][3] = lambdaHS;
-  Curvature_Higgs_L4[4][4][0][0] = lambdaHS;
-  Curvature_Higgs_L4[4][4][1][1] = lambdaHS;
-  Curvature_Higgs_L4[4][4][2][2] = lambdaHS;
-  Curvature_Higgs_L4[4][4][3][3] = lambdaHS;
-  Curvature_Higgs_L4[4][4][4][4] = lambdaS;
+  Curvature_Higgs_L3.at(0).at(0).at(4) = (1.0/2.0)*a1;
+  Curvature_Higgs_L3.at(0).at(4).at(0) = (1.0/2.0)*a1;
+  Curvature_Higgs_L3.at(1).at(1).at(4) = (1.0/2.0)*a1;
+  Curvature_Higgs_L3.at(1).at(4).at(1) = (1.0/2.0)*a1;
+  Curvature_Higgs_L3.at(2).at(2).at(4) = (1.0/2.0)*a1;
+  Curvature_Higgs_L3.at(2).at(4).at(2) = (1.0/2.0)*a1;
+  Curvature_Higgs_L3.at(3).at(3).at(4) = (1.0/2.0)*a1;
+  Curvature_Higgs_L3.at(3).at(4).at(3) = (1.0/2.0)*a1;
+  Curvature_Higgs_L3.at(4).at(0).at(0) = (1.0/2.0)*a1;
+  Curvature_Higgs_L3.at(4).at(1).at(1) = (1.0/2.0)*a1;
+  Curvature_Higgs_L3.at(4).at(2).at(2) = (1.0/2.0)*a1;
+  Curvature_Higgs_L3.at(4).at(3).at(3) = (1.0/2.0)*a1;
+  Curvature_Higgs_L3.at(4).at(4).at(4) = 2*b3;
 
-  Curvature_Gauge_G2H2[0][0][0][0] = SMConstants.C_g * SMConstants.C_g / 0.2e1;
-  Curvature_Gauge_G2H2[0][0][1][1] = SMConstants.C_g * SMConstants.C_g / 0.2e1;
-  Curvature_Gauge_G2H2[0][0][2][2] = SMConstants.C_g * SMConstants.C_g / 0.2e1;
-  Curvature_Gauge_G2H2[0][0][3][3] = SMConstants.C_g * SMConstants.C_g / 0.2e1;
-  Curvature_Gauge_G2H2[0][3][0][3] = SMConstants.C_gs * SMConstants.C_g / 0.2e1;
-  Curvature_Gauge_G2H2[0][3][1][2] = SMConstants.C_gs * SMConstants.C_g / 0.2e1;
-  Curvature_Gauge_G2H2[0][3][2][1] = SMConstants.C_gs * SMConstants.C_g / 0.2e1;
-  Curvature_Gauge_G2H2[0][3][3][0] = SMConstants.C_gs * SMConstants.C_g / 0.2e1;
-  Curvature_Gauge_G2H2[1][1][0][0] = SMConstants.C_g * SMConstants.C_g / 0.2e1;
-  Curvature_Gauge_G2H2[1][1][1][1] = SMConstants.C_g * SMConstants.C_g / 0.2e1;
-  Curvature_Gauge_G2H2[1][1][2][2] = SMConstants.C_g * SMConstants.C_g / 0.2e1;
-  Curvature_Gauge_G2H2[1][1][3][3] = SMConstants.C_g * SMConstants.C_g / 0.2e1;
-  Curvature_Gauge_G2H2[1][3][0][2] = SMConstants.C_gs * SMConstants.C_g / 0.2e1;
-  Curvature_Gauge_G2H2[1][3][1][3] = -SMConstants.C_gs * SMConstants.C_g / 0.2e1;
-  Curvature_Gauge_G2H2[1][3][2][0] = SMConstants.C_gs * SMConstants.C_g / 0.2e1;
-  Curvature_Gauge_G2H2[1][3][3][1] = -SMConstants.C_gs * SMConstants.C_g / 0.2e1;
-  Curvature_Gauge_G2H2[2][2][0][0] = SMConstants.C_g * SMConstants.C_g / 0.2e1;
-  Curvature_Gauge_G2H2[2][2][1][1] = SMConstants.C_g * SMConstants.C_g / 0.2e1;
-  Curvature_Gauge_G2H2[2][2][2][2] = SMConstants.C_g * SMConstants.C_g / 0.2e1;
-  Curvature_Gauge_G2H2[2][2][3][3] = SMConstants.C_g * SMConstants.C_g / 0.2e1;
-  Curvature_Gauge_G2H2[2][3][0][0] = SMConstants.C_gs * SMConstants.C_g / 0.2e1;
-  Curvature_Gauge_G2H2[2][3][1][1] = SMConstants.C_gs * SMConstants.C_g / 0.2e1;
-  Curvature_Gauge_G2H2[2][3][2][2] = -SMConstants.C_gs * SMConstants.C_g / 0.2e1;
-  Curvature_Gauge_G2H2[2][3][3][3] = -SMConstants.C_gs * SMConstants.C_g / 0.2e1;
-  Curvature_Gauge_G2H2[3][0][0][3] = SMConstants.C_gs * SMConstants.C_g / 0.2e1;
-  Curvature_Gauge_G2H2[3][0][1][2] = SMConstants.C_gs * SMConstants.C_g / 0.2e1;
-  Curvature_Gauge_G2H2[3][0][2][1] = SMConstants.C_gs * SMConstants.C_g / 0.2e1;
-  Curvature_Gauge_G2H2[3][0][3][0] = SMConstants.C_gs * SMConstants.C_g / 0.2e1;
-  Curvature_Gauge_G2H2[3][1][0][2] = SMConstants.C_gs * SMConstants.C_g / 0.2e1;
-  Curvature_Gauge_G2H2[3][1][1][3] = -SMConstants.C_gs * SMConstants.C_g / 0.2e1;
-  Curvature_Gauge_G2H2[3][1][2][0] = SMConstants.C_gs * SMConstants.C_g / 0.2e1;
-  Curvature_Gauge_G2H2[3][1][3][1] = -SMConstants.C_gs * SMConstants.C_g / 0.2e1;
-  Curvature_Gauge_G2H2[3][2][0][0] = SMConstants.C_gs * SMConstants.C_g / 0.2e1;
-  Curvature_Gauge_G2H2[3][2][1][1] = SMConstants.C_gs * SMConstants.C_g / 0.2e1;
-  Curvature_Gauge_G2H2[3][2][2][2] = -SMConstants.C_gs * SMConstants.C_g / 0.2e1;
-  Curvature_Gauge_G2H2[3][2][3][3] = -SMConstants.C_gs * SMConstants.C_g / 0.2e1;
-  Curvature_Gauge_G2H2[3][3][0][0] = SMConstants.C_gs * SMConstants.C_gs / 0.2e1;
-  Curvature_Gauge_G2H2[3][3][1][1] = SMConstants.C_gs * SMConstants.C_gs / 0.2e1;
-  Curvature_Gauge_G2H2[3][3][2][2] = SMConstants.C_gs * SMConstants.C_gs / 0.2e1;
-  Curvature_Gauge_G2H2[3][3][3][3] = SMConstants.C_gs * SMConstants.C_gs / 0.2e1;
+  Curvature_Higgs_L4.at(0).at(0).at(0).at(0) = 6*lam;
+  Curvature_Higgs_L4.at(0).at(0).at(1).at(1) = 2*lam;
+  Curvature_Higgs_L4.at(0).at(0).at(2).at(2) = 2*lam;
+  Curvature_Higgs_L4.at(0).at(0).at(3).at(3) = 2*lam;
+  Curvature_Higgs_L4.at(0).at(0).at(4).at(4) = a2;
+  Curvature_Higgs_L4.at(0).at(1).at(0).at(1) = 2*lam;
+  Curvature_Higgs_L4.at(0).at(1).at(1).at(0) = 2*lam;
+  Curvature_Higgs_L4.at(0).at(2).at(0).at(2) = 2*lam;
+  Curvature_Higgs_L4.at(0).at(2).at(2).at(0) = 2*lam;
+  Curvature_Higgs_L4.at(0).at(3).at(0).at(3) = 2*lam;
+  Curvature_Higgs_L4.at(0).at(3).at(3).at(0) = 2*lam;
+  Curvature_Higgs_L4.at(0).at(4).at(0).at(4) = a2;
+  Curvature_Higgs_L4.at(0).at(4).at(4).at(0) = a2;
+  Curvature_Higgs_L4.at(1).at(0).at(0).at(1) = 2*lam;
+  Curvature_Higgs_L4.at(1).at(0).at(1).at(0) = 2*lam;
+  Curvature_Higgs_L4.at(1).at(1).at(0).at(0) = 2*lam;
+  Curvature_Higgs_L4.at(1).at(1).at(1).at(1) = 6*lam;
+  Curvature_Higgs_L4.at(1).at(1).at(2).at(2) = 2*lam;
+  Curvature_Higgs_L4.at(1).at(1).at(3).at(3) = 2*lam;
+  Curvature_Higgs_L4.at(1).at(1).at(4).at(4) = a2;
+  Curvature_Higgs_L4.at(1).at(2).at(1).at(2) = 2*lam;
+  Curvature_Higgs_L4.at(1).at(2).at(2).at(1) = 2*lam;
+  Curvature_Higgs_L4.at(1).at(3).at(1).at(3) = 2*lam;
+  Curvature_Higgs_L4.at(1).at(3).at(3).at(1) = 2*lam;
+  Curvature_Higgs_L4.at(1).at(4).at(1).at(4) = a2;
+  Curvature_Higgs_L4.at(1).at(4).at(4).at(1) = a2;
+  Curvature_Higgs_L4.at(2).at(0).at(0).at(2) = 2*lam;
+  Curvature_Higgs_L4.at(2).at(0).at(2).at(0) = 2*lam;
+  Curvature_Higgs_L4.at(2).at(1).at(1).at(2) = 2*lam;
+  Curvature_Higgs_L4.at(2).at(1).at(2).at(1) = 2*lam;
+  Curvature_Higgs_L4.at(2).at(2).at(0).at(0) = 2*lam;
+  Curvature_Higgs_L4.at(2).at(2).at(1).at(1) = 2*lam;
+  Curvature_Higgs_L4.at(2).at(2).at(2).at(2) = 6*lam;
+  Curvature_Higgs_L4.at(2).at(2).at(3).at(3) = 2*lam;
+  Curvature_Higgs_L4.at(2).at(2).at(4).at(4) = a2;
+  Curvature_Higgs_L4.at(2).at(3).at(2).at(3) = 2*lam;
+  Curvature_Higgs_L4.at(2).at(3).at(3).at(2) = 2*lam;
+  Curvature_Higgs_L4.at(2).at(4).at(2).at(4) = a2;
+  Curvature_Higgs_L4.at(2).at(4).at(4).at(2) = a2;
+  Curvature_Higgs_L4.at(3).at(0).at(0).at(3) = 2*lam;
+  Curvature_Higgs_L4.at(3).at(0).at(3).at(0) = 2*lam;
+  Curvature_Higgs_L4.at(3).at(1).at(1).at(3) = 2*lam;
+  Curvature_Higgs_L4.at(3).at(1).at(3).at(1) = 2*lam;
+  Curvature_Higgs_L4.at(3).at(2).at(2).at(3) = 2*lam;
+  Curvature_Higgs_L4.at(3).at(2).at(3).at(2) = 2*lam;
+  Curvature_Higgs_L4.at(3).at(3).at(0).at(0) = 2*lam;
+  Curvature_Higgs_L4.at(3).at(3).at(1).at(1) = 2*lam;
+  Curvature_Higgs_L4.at(3).at(3).at(2).at(2) = 2*lam;
+  Curvature_Higgs_L4.at(3).at(3).at(3).at(3) = 6*lam;
+  Curvature_Higgs_L4.at(3).at(3).at(4).at(4) = a2;
+  Curvature_Higgs_L4.at(3).at(4).at(3).at(4) = a2;
+  Curvature_Higgs_L4.at(3).at(4).at(4).at(3) = a2;
+  Curvature_Higgs_L4.at(4).at(0).at(0).at(4) = a2;
+  Curvature_Higgs_L4.at(4).at(0).at(4).at(0) = a2;
+  Curvature_Higgs_L4.at(4).at(1).at(1).at(4) = a2;
+  Curvature_Higgs_L4.at(4).at(1).at(4).at(1) = a2;
+  Curvature_Higgs_L4.at(4).at(2).at(2).at(4) = a2;
+  Curvature_Higgs_L4.at(4).at(2).at(4).at(2) = a2;
+  Curvature_Higgs_L4.at(4).at(3).at(3).at(4) = a2;
+  Curvature_Higgs_L4.at(4).at(3).at(4).at(3) = a2;
+  Curvature_Higgs_L4.at(4).at(4).at(0).at(0) = a2;
+  Curvature_Higgs_L4.at(4).at(4).at(1).at(1) = a2;
+  Curvature_Higgs_L4.at(4).at(4).at(2).at(2) = a2;
+  Curvature_Higgs_L4.at(4).at(4).at(3).at(3) = a2;
+  Curvature_Higgs_L4.at(4).at(4).at(4).at(4) = 6*b4;
 
-  Curvature_Lepton_F2H1[0][1][2] = II / vH * SMConstants.C_MassElectron;
-  Curvature_Lepton_F2H1[0][1][3] = 0.1e1 / vH * SMConstants.C_MassElectron;
-  Curvature_Lepton_F2H1[1][0][2] = II / vH * SMConstants.C_MassElectron;
-  Curvature_Lepton_F2H1[1][0][3] = 0.1e1 / vH * SMConstants.C_MassElectron;
-  Curvature_Lepton_F2H1[1][6][0] = 0.1e1 / vH * SMConstants.C_MassElectron;
-  Curvature_Lepton_F2H1[1][6][1] = II / vH * SMConstants.C_MassElectron;
-  Curvature_Lepton_F2H1[2][3][2] = II / vH * SMConstants.C_MassMu;
-  Curvature_Lepton_F2H1[2][3][3] = 0.1e1 / vH * SMConstants.C_MassMu;
-  Curvature_Lepton_F2H1[3][2][2] = II / vH * SMConstants.C_MassMu;
-  Curvature_Lepton_F2H1[3][2][3] = 0.1e1 / vH * SMConstants.C_MassMu;
-  Curvature_Lepton_F2H1[3][7][0] = 0.1e1 / vH * SMConstants.C_MassMu;
-  Curvature_Lepton_F2H1[3][7][1] = II / vH * SMConstants.C_MassMu;
-  Curvature_Lepton_F2H1[4][5][2] = II / vH * SMConstants.C_MassTau;
-  Curvature_Lepton_F2H1[4][5][3] = 0.1e1 / vH * SMConstants.C_MassTau;
-  Curvature_Lepton_F2H1[5][4][2] = II / vH * SMConstants.C_MassTau;
-  Curvature_Lepton_F2H1[5][4][3] = 0.1e1 / vH * SMConstants.C_MassTau;
-  Curvature_Lepton_F2H1[5][8][0] = 0.1e1 / vH * SMConstants.C_MassTau;
-  Curvature_Lepton_F2H1[5][8][1] = II / vH * SMConstants.C_MassTau;
-  Curvature_Lepton_F2H1[6][1][0] = 0.1e1 / vH * SMConstants.C_MassElectron;
-  Curvature_Lepton_F2H1[6][1][1] = II / vH * SMConstants.C_MassElectron;
-  Curvature_Lepton_F2H1[7][3][0] = 0.1e1 / vH * SMConstants.C_MassMu;
-  Curvature_Lepton_F2H1[7][3][1] = II / vH * SMConstants.C_MassMu;
-  Curvature_Lepton_F2H1[8][5][0] = 0.1e1 / vH * SMConstants.C_MassTau;
-  Curvature_Lepton_F2H1[8][5][1] = II / vH * SMConstants.C_MassTau;
+  Curvature_Gauge_G2H2.at(0).at(0).at(0).at(0) = (1.0/2.0)*std::pow(SMConstants.C_g, 2);
+  Curvature_Gauge_G2H2.at(0).at(0).at(1).at(1) = (1.0/2.0)*std::pow(SMConstants.C_g, 2);
+  Curvature_Gauge_G2H2.at(0).at(0).at(2).at(2) = (1.0/2.0)*std::pow(SMConstants.C_g, 2);
+  Curvature_Gauge_G2H2.at(0).at(0).at(3).at(3) = (1.0/2.0)*std::pow(SMConstants.C_g, 2);
+  Curvature_Gauge_G2H2.at(0).at(3).at(0).at(3) = (1.0/2.0)*SMConstants.C_g*SMConstants.C_gs;
+  Curvature_Gauge_G2H2.at(0).at(3).at(1).at(2) = (1.0/2.0)*SMConstants.C_g*SMConstants.C_gs;
+  Curvature_Gauge_G2H2.at(0).at(3).at(2).at(1) = (1.0/2.0)*SMConstants.C_g*SMConstants.C_gs;
+  Curvature_Gauge_G2H2.at(0).at(3).at(3).at(0) = (1.0/2.0)*SMConstants.C_g*SMConstants.C_gs;
+  Curvature_Gauge_G2H2.at(1).at(1).at(0).at(0) = (1.0/2.0)*std::pow(SMConstants.C_g, 2);
+  Curvature_Gauge_G2H2.at(1).at(1).at(1).at(1) = (1.0/2.0)*std::pow(SMConstants.C_g, 2);
+  Curvature_Gauge_G2H2.at(1).at(1).at(2).at(2) = (1.0/2.0)*std::pow(SMConstants.C_g, 2);
+  Curvature_Gauge_G2H2.at(1).at(1).at(3).at(3) = (1.0/2.0)*std::pow(SMConstants.C_g, 2);
+  Curvature_Gauge_G2H2.at(1).at(3).at(0).at(2) = (1.0/2.0)*SMConstants.C_g*SMConstants.C_gs;
+  Curvature_Gauge_G2H2.at(1).at(3).at(1).at(3) = -1.0/2.0*SMConstants.C_g*SMConstants.C_gs;
+  Curvature_Gauge_G2H2.at(1).at(3).at(2).at(0) = (1.0/2.0)*SMConstants.C_g*SMConstants.C_gs;
+  Curvature_Gauge_G2H2.at(1).at(3).at(3).at(1) = -1.0/2.0*SMConstants.C_g*SMConstants.C_gs;
+  Curvature_Gauge_G2H2.at(2).at(2).at(0).at(0) = (1.0/2.0)*std::pow(SMConstants.C_g, 2);
+  Curvature_Gauge_G2H2.at(2).at(2).at(1).at(1) = (1.0/2.0)*std::pow(SMConstants.C_g, 2);
+  Curvature_Gauge_G2H2.at(2).at(2).at(2).at(2) = (1.0/2.0)*std::pow(SMConstants.C_g, 2);
+  Curvature_Gauge_G2H2.at(2).at(2).at(3).at(3) = (1.0/2.0)*std::pow(SMConstants.C_g, 2);
+  Curvature_Gauge_G2H2.at(2).at(3).at(0).at(0) = (1.0/2.0)*SMConstants.C_g*SMConstants.C_gs;
+  Curvature_Gauge_G2H2.at(2).at(3).at(1).at(1) = (1.0/2.0)*SMConstants.C_g*SMConstants.C_gs;
+  Curvature_Gauge_G2H2.at(2).at(3).at(2).at(2) = -1.0/2.0*SMConstants.C_g*SMConstants.C_gs;
+  Curvature_Gauge_G2H2.at(2).at(3).at(3).at(3) = -1.0/2.0*SMConstants.C_g*SMConstants.C_gs;
+  Curvature_Gauge_G2H2.at(3).at(0).at(0).at(3) = (1.0/2.0)*SMConstants.C_g*SMConstants.C_gs;
+  Curvature_Gauge_G2H2.at(3).at(0).at(1).at(2) = (1.0/2.0)*SMConstants.C_g*SMConstants.C_gs;
+  Curvature_Gauge_G2H2.at(3).at(0).at(2).at(1) = (1.0/2.0)*SMConstants.C_g*SMConstants.C_gs;
+  Curvature_Gauge_G2H2.at(3).at(0).at(3).at(0) = (1.0/2.0)*SMConstants.C_g*SMConstants.C_gs;
+  Curvature_Gauge_G2H2.at(3).at(1).at(0).at(2) = (1.0/2.0)*SMConstants.C_g*SMConstants.C_gs;
+  Curvature_Gauge_G2H2.at(3).at(1).at(1).at(3) = -1.0/2.0*SMConstants.C_g*SMConstants.C_gs;
+  Curvature_Gauge_G2H2.at(3).at(1).at(2).at(0) = (1.0/2.0)*SMConstants.C_g*SMConstants.C_gs;
+  Curvature_Gauge_G2H2.at(3).at(1).at(3).at(1) = -1.0/2.0*SMConstants.C_g*SMConstants.C_gs;
+  Curvature_Gauge_G2H2.at(3).at(2).at(0).at(0) = (1.0/2.0)*SMConstants.C_g*SMConstants.C_gs;
+  Curvature_Gauge_G2H2.at(3).at(2).at(1).at(1) = (1.0/2.0)*SMConstants.C_g*SMConstants.C_gs;
+  Curvature_Gauge_G2H2.at(3).at(2).at(2).at(2) = -1.0/2.0*SMConstants.C_g*SMConstants.C_gs;
+  Curvature_Gauge_G2H2.at(3).at(2).at(3).at(3) = -1.0/2.0*SMConstants.C_g*SMConstants.C_gs;
+  Curvature_Gauge_G2H2.at(3).at(3).at(0).at(0) = (1.0/2.0)*std::pow(SMConstants.C_gs, 2);
+  Curvature_Gauge_G2H2.at(3).at(3).at(1).at(1) = (1.0/2.0)*std::pow(SMConstants.C_gs, 2);
+  Curvature_Gauge_G2H2.at(3).at(3).at(2).at(2) = (1.0/2.0)*std::pow(SMConstants.C_gs, 2);
+  Curvature_Gauge_G2H2.at(3).at(3).at(3).at(3) = (1.0/2.0)*std::pow(SMConstants.C_gs, 2);
 
+  Curvature_Lepton_F2H1.at(0).at(3).at(0) = SMConstants.C_MassElectron/vH;
+  Curvature_Lepton_F2H1.at(0).at(3).at(1) = SMConstants.C_MassElectron*II/vH;
+  Curvature_Lepton_F2H1.at(1).at(4).at(0) = SMConstants.C_MassMu/vH;
+  Curvature_Lepton_F2H1.at(1).at(4).at(1) = SMConstants.C_MassMu*II/vH;
+  Curvature_Lepton_F2H1.at(2).at(5).at(0) = SMConstants.C_MassTau/vH;
+  Curvature_Lepton_F2H1.at(2).at(5).at(1) = SMConstants.C_MassTau*II/vH;
+  Curvature_Lepton_F2H1.at(3).at(0).at(0) = SMConstants.C_MassElectron/vH;
+  Curvature_Lepton_F2H1.at(3).at(0).at(1) = SMConstants.C_MassElectron*II/vH;
+  Curvature_Lepton_F2H1.at(3).at(6).at(2) = SMConstants.C_MassElectron*II/vH;
+  Curvature_Lepton_F2H1.at(3).at(6).at(3) = SMConstants.C_MassElectron/vH;
+  Curvature_Lepton_F2H1.at(4).at(1).at(0) = SMConstants.C_MassMu/vH;
+  Curvature_Lepton_F2H1.at(4).at(1).at(1) = SMConstants.C_MassMu*II/vH;
+  Curvature_Lepton_F2H1.at(4).at(7).at(2) = SMConstants.C_MassMu*II/vH;
+  Curvature_Lepton_F2H1.at(4).at(7).at(3) = SMConstants.C_MassMu/vH;
+  Curvature_Lepton_F2H1.at(5).at(2).at(0) = SMConstants.C_MassTau/vH;
+  Curvature_Lepton_F2H1.at(5).at(2).at(1) = SMConstants.C_MassTau*II/vH;
+  Curvature_Lepton_F2H1.at(5).at(8).at(2) = SMConstants.C_MassTau*II/vH;
+  Curvature_Lepton_F2H1.at(5).at(8).at(3) = SMConstants.C_MassTau/vH;
+  Curvature_Lepton_F2H1.at(6).at(3).at(2) = SMConstants.C_MassElectron*II/vH;
+  Curvature_Lepton_F2H1.at(6).at(3).at(3) = SMConstants.C_MassElectron/vH;
+  Curvature_Lepton_F2H1.at(7).at(4).at(2) = SMConstants.C_MassMu*II/vH;
+  Curvature_Lepton_F2H1.at(7).at(4).at(3) = SMConstants.C_MassMu/vH;
+  Curvature_Lepton_F2H1.at(8).at(5).at(2) = SMConstants.C_MassTau*II/vH;
+  Curvature_Lepton_F2H1.at(8).at(5).at(3) = SMConstants.C_MassTau/vH;
 
-  std::complex<double> V11, V12, V13, V21, V22, V23, V31, V32, V33;
-  V11 = SMConstants.C_Vud;
-  V12 = SMConstants.C_Vus;
-  V13 = SMConstants.C_Vub;
-  V21 = SMConstants.C_Vcd;
-  V22 = SMConstants.C_Vcs;
-  V23 = SMConstants.C_Vcb;
-  V31 = SMConstants.C_Vtd;
-  V32 = SMConstants.C_Vts;
-  V33 = SMConstants.C_Vtb;
+  std::complex<double> Vud, Vus, Vub, Vcd, Vcs, Vcb, Vtd, Vts, Vtb;
+  Vud = SMConstants.C_Vud;
+  Vus = SMConstants.C_Vus;
+  Vub = SMConstants.C_Vub;
+  Vcd = SMConstants.C_Vcd;
+  Vcs = SMConstants.C_Vcs;
+  Vcb = SMConstants.C_Vcb;
+  Vtd = SMConstants.C_Vtd;
+  Vts = SMConstants.C_Vts;
+  Vtb = SMConstants.C_Vtb;
 
-  std::complex<double> VC11, VC12, VC13, VC21, VC22, VC23, VC31, VC32, VC33;
-  VC11 = std::conj(SMConstants.C_Vud);
-  VC12 = std::conj(SMConstants.C_Vus);
-  VC13 = std::conj(SMConstants.C_Vub);
-  VC21 = std::conj(SMConstants.C_Vcd);
-  VC22 = std::conj(SMConstants.C_Vcs);
-  VC23 = std::conj(SMConstants.C_Vcb);
-  VC31 = std::conj(SMConstants.C_Vtd);
-  VC32 = std::conj(SMConstants.C_Vts);
-  VC33 = std::conj(SMConstants.C_Vtb);
-
-  Curvature_Quark_F2H1[0][6][2] = -II / vH * SMConstants.C_MassUp;
-  Curvature_Quark_F2H1[0][6][3] = 0.1e1 / vH * SMConstants.C_MassUp;
-  Curvature_Quark_F2H1[0][9][0] = -0.1e1 / vH * SMConstants.C_MassUp * conj(V11);
-  Curvature_Quark_F2H1[0][9][1] = II / vH * SMConstants.C_MassUp * conj(V11);
-  Curvature_Quark_F2H1[0][10][0] = -0.1e1 / vH * SMConstants.C_MassUp * conj(V12);
-  Curvature_Quark_F2H1[0][10][1] = II / vH * SMConstants.C_MassUp * conj(V12);
-  Curvature_Quark_F2H1[0][11][0] = -0.1e1 / vH * SMConstants.C_MassUp * conj(V13);
-  Curvature_Quark_F2H1[0][11][1] = II / vH * SMConstants.C_MassUp * conj(V13);
-  Curvature_Quark_F2H1[1][7][2] = -II / vH * SMConstants.C_MassCharm;
-  Curvature_Quark_F2H1[1][7][3] = 0.1e1 / vH * SMConstants.C_MassCharm;
-  Curvature_Quark_F2H1[1][9][0] = -0.1e1 / vH * SMConstants.C_MassCharm * conj(V21);
-  Curvature_Quark_F2H1[1][9][1] = II / vH * SMConstants.C_MassCharm * conj(V21);
-  Curvature_Quark_F2H1[1][10][0] = -0.1e1 / vH * SMConstants.C_MassCharm * conj(V22);
-  Curvature_Quark_F2H1[1][10][1] = II / vH * SMConstants.C_MassCharm * conj(V22);
-  Curvature_Quark_F2H1[1][11][0] = -0.1e1 / vH * SMConstants.C_MassCharm * conj(V23);
-  Curvature_Quark_F2H1[1][11][1] = II / vH * SMConstants.C_MassCharm * conj(V23);
-  Curvature_Quark_F2H1[2][8][2] = -II / vH * SMConstants.C_MassTop;
-  Curvature_Quark_F2H1[2][8][3] = 0.1e1 / vH * SMConstants.C_MassTop;
-  Curvature_Quark_F2H1[2][9][0] = -0.1e1 / vH * SMConstants.C_MassTop * conj(V31);
-  Curvature_Quark_F2H1[2][9][1] = II / vH * SMConstants.C_MassTop * conj(V31);
-  Curvature_Quark_F2H1[2][10][0] = -0.1e1 / vH * SMConstants.C_MassTop * conj(V32);
-  Curvature_Quark_F2H1[2][10][1] = II / vH * SMConstants.C_MassTop * conj(V32);
-  Curvature_Quark_F2H1[2][11][0] = -0.1e1 / vH * SMConstants.C_MassTop * conj(V33);
-  Curvature_Quark_F2H1[2][11][1] = II / vH * SMConstants.C_MassTop * conj(V33);
-  Curvature_Quark_F2H1[3][6][0] = V11 / vH * SMConstants.C_MassDown;
-  Curvature_Quark_F2H1[3][6][1] = II * V11 / vH * SMConstants.C_MassDown;
-  Curvature_Quark_F2H1[3][7][0] = V21 / vH * SMConstants.C_MassDown;
-  Curvature_Quark_F2H1[3][7][1] = II * V21 / vH * SMConstants.C_MassDown;
-  Curvature_Quark_F2H1[3][8][0] = V31 / vH * SMConstants.C_MassDown;
-  Curvature_Quark_F2H1[3][8][1] = II * V31 / vH * SMConstants.C_MassDown;
-  Curvature_Quark_F2H1[3][9][2] = II / vH * SMConstants.C_MassDown;
-  Curvature_Quark_F2H1[3][9][3] = 0.1e1 / vH * SMConstants.C_MassDown;
-  Curvature_Quark_F2H1[4][6][0] = 0.1e1 / vH * SMConstants.C_MassStrange * V12;
-  Curvature_Quark_F2H1[4][6][1] = II / vH * SMConstants.C_MassStrange * V12;
-  Curvature_Quark_F2H1[4][7][0] = V22 / vH * SMConstants.C_MassStrange;
-  Curvature_Quark_F2H1[4][7][1] = II * V22 / vH * SMConstants.C_MassStrange;
-  Curvature_Quark_F2H1[4][8][0] = 0.1e1 / vH * SMConstants.C_MassStrange * V32;
-  Curvature_Quark_F2H1[4][8][1] = II / vH * SMConstants.C_MassStrange * V32;
-  Curvature_Quark_F2H1[4][10][2] = II / vH * SMConstants.C_MassStrange;
-  Curvature_Quark_F2H1[4][10][3] = 0.1e1 / vH * SMConstants.C_MassStrange;
-  Curvature_Quark_F2H1[5][6][0] = V13 / vH * SMConstants.C_MassBottom;
-  Curvature_Quark_F2H1[5][6][1] = II / vH * SMConstants.C_MassBottom * V13;
-  Curvature_Quark_F2H1[5][7][0] = V23 / vH * SMConstants.C_MassBottom;
-  Curvature_Quark_F2H1[5][7][1] = II / vH * SMConstants.C_MassBottom * V23;
-  Curvature_Quark_F2H1[5][8][0] = V33 / vH * SMConstants.C_MassBottom;
-  Curvature_Quark_F2H1[5][8][1] = II / vH * SMConstants.C_MassBottom * V33;
-  Curvature_Quark_F2H1[5][11][2] = II / vH * SMConstants.C_MassBottom;
-  Curvature_Quark_F2H1[5][11][3] = 0.1e1 / vH * SMConstants.C_MassBottom;
-  Curvature_Quark_F2H1[6][0][2] = -II / vH * SMConstants.C_MassUp;
-  Curvature_Quark_F2H1[6][0][3] = 0.1e1 / vH * SMConstants.C_MassUp;
-  Curvature_Quark_F2H1[6][3][0] = V11 / vH * SMConstants.C_MassDown;
-  Curvature_Quark_F2H1[6][3][1] = II * V11 / vH * SMConstants.C_MassDown;
-  Curvature_Quark_F2H1[6][4][0] = 0.1e1 / vH * SMConstants.C_MassStrange * V12;
-  Curvature_Quark_F2H1[6][4][1] = II / vH * SMConstants.C_MassStrange * V12;
-  Curvature_Quark_F2H1[6][5][0] = V13 / vH * SMConstants.C_MassBottom;
-  Curvature_Quark_F2H1[6][5][1] = II / vH * SMConstants.C_MassBottom * V13;
-  Curvature_Quark_F2H1[7][1][2] = -II / vH * SMConstants.C_MassCharm;
-  Curvature_Quark_F2H1[7][1][3] = 0.1e1 / vH * SMConstants.C_MassCharm;
-  Curvature_Quark_F2H1[7][3][0] = V21 / vH * SMConstants.C_MassDown;
-  Curvature_Quark_F2H1[7][3][1] = II * V21 / vH * SMConstants.C_MassDown;
-  Curvature_Quark_F2H1[7][4][0] = V22 / vH * SMConstants.C_MassStrange;
-  Curvature_Quark_F2H1[7][4][1] = II * V22 / vH * SMConstants.C_MassStrange;
-  Curvature_Quark_F2H1[7][5][0] = V23 / vH * SMConstants.C_MassBottom;
-  Curvature_Quark_F2H1[7][5][1] = II / vH * SMConstants.C_MassBottom * V23;
-  Curvature_Quark_F2H1[8][2][2] = -II / vH * SMConstants.C_MassTop;
-  Curvature_Quark_F2H1[8][2][3] = 0.1e1 / vH * SMConstants.C_MassTop;
-  Curvature_Quark_F2H1[8][3][0] = V31 / vH * SMConstants.C_MassDown;
-  Curvature_Quark_F2H1[8][3][1] = II * V31 / vH * SMConstants.C_MassDown;
-  Curvature_Quark_F2H1[8][4][0] = 0.1e1 / vH * SMConstants.C_MassStrange * V32;
-  Curvature_Quark_F2H1[8][4][1] = II / vH * SMConstants.C_MassStrange * V32;
-  Curvature_Quark_F2H1[8][5][0] = V33 / vH * SMConstants.C_MassBottom;
-  Curvature_Quark_F2H1[8][5][1] = II / vH * SMConstants.C_MassBottom * V33;
-  Curvature_Quark_F2H1[9][0][0] = -0.1e1 / vH * SMConstants.C_MassUp * conj(V11);
-  Curvature_Quark_F2H1[9][0][1] = II / vH * SMConstants.C_MassUp * conj(V11);
-  Curvature_Quark_F2H1[9][1][0] = -0.1e1 / vH * SMConstants.C_MassCharm * conj(V21);
-  Curvature_Quark_F2H1[9][1][1] = II / vH * SMConstants.C_MassCharm * conj(V21);
-  Curvature_Quark_F2H1[9][2][0] = -0.1e1 / vH * SMConstants.C_MassTop * conj(V31);
-  Curvature_Quark_F2H1[9][2][1] = II / vH * SMConstants.C_MassTop * conj(V31);
-  Curvature_Quark_F2H1[9][3][2] = II / vH * SMConstants.C_MassDown;
-  Curvature_Quark_F2H1[9][3][3] = 0.1e1 / vH * SMConstants.C_MassDown;
-  Curvature_Quark_F2H1[10][0][0] = -0.1e1 / vH * SMConstants.C_MassUp * conj(V12);
-  Curvature_Quark_F2H1[10][0][1] = II / vH * SMConstants.C_MassUp * conj(V12);
-  Curvature_Quark_F2H1[10][1][0] = -0.1e1 / vH * SMConstants.C_MassCharm * conj(V22);
-  Curvature_Quark_F2H1[10][1][1] = II / vH * SMConstants.C_MassCharm * conj(V22);
-  Curvature_Quark_F2H1[10][2][0] = -0.1e1 / vH * SMConstants.C_MassTop * conj(V32);
-  Curvature_Quark_F2H1[10][2][1] = II / vH * SMConstants.C_MassTop * conj(V32);
-  Curvature_Quark_F2H1[10][4][2] = II / vH * SMConstants.C_MassStrange;
-  Curvature_Quark_F2H1[10][4][3] = 0.1e1 / vH * SMConstants.C_MassStrange;
-  Curvature_Quark_F2H1[11][0][0] = -0.1e1 / vH * SMConstants.C_MassUp * conj(V13);
-  Curvature_Quark_F2H1[11][0][1] = II / vH * SMConstants.C_MassUp * conj(V13);
-  Curvature_Quark_F2H1[11][1][0] = -0.1e1 / vH * SMConstants.C_MassCharm * conj(V23);
-  Curvature_Quark_F2H1[11][1][1] = II / vH * SMConstants.C_MassCharm * conj(V23);
-  Curvature_Quark_F2H1[11][2][0] = -0.1e1 / vH * SMConstants.C_MassTop * conj(V33);
-  Curvature_Quark_F2H1[11][2][1] = II / vH * SMConstants.C_MassTop * conj(V33);
-  Curvature_Quark_F2H1[11][5][2] = II / vH * SMConstants.C_MassBottom;
-  Curvature_Quark_F2H1[11][5][3] = 0.1e1 / vH * SMConstants.C_MassBottom;
+  Curvature_Quark_F2H1.at(0).at(6).at(2) = -SMConstants.C_MassUp*II/vH;
+  Curvature_Quark_F2H1.at(0).at(6).at(3) = SMConstants.C_MassUp/vH;
+  Curvature_Quark_F2H1.at(0).at(9).at(0) = -SMConstants.C_MassUp*conj(Vud)/vH;
+  Curvature_Quark_F2H1.at(0).at(9).at(1) = SMConstants.C_MassUp*II*conj(Vud)/vH;
+  Curvature_Quark_F2H1.at(0).at(10).at(0) = -SMConstants.C_MassUp*conj(Vus)/vH;
+  Curvature_Quark_F2H1.at(0).at(10).at(1) = SMConstants.C_MassUp*II*conj(Vus)/vH;
+  Curvature_Quark_F2H1.at(0).at(11).at(0) = -SMConstants.C_MassUp*conj(Vub)/vH;
+  Curvature_Quark_F2H1.at(0).at(11).at(1) = SMConstants.C_MassUp*II*conj(Vub)/vH;
+  Curvature_Quark_F2H1.at(1).at(7).at(2) = -SMConstants.C_MassCharm*II/vH;
+  Curvature_Quark_F2H1.at(1).at(7).at(3) = SMConstants.C_MassCharm/vH;
+  Curvature_Quark_F2H1.at(1).at(9).at(0) = -SMConstants.C_MassCharm*conj(Vcd)/vH;
+  Curvature_Quark_F2H1.at(1).at(9).at(1) = SMConstants.C_MassCharm*II*conj(Vcd)/vH;
+  Curvature_Quark_F2H1.at(1).at(10).at(0) = -SMConstants.C_MassCharm*conj(Vcs)/vH;
+  Curvature_Quark_F2H1.at(1).at(10).at(1) = SMConstants.C_MassCharm*II*conj(Vcs)/vH;
+  Curvature_Quark_F2H1.at(1).at(11).at(0) = -SMConstants.C_MassCharm*conj(Vcb)/vH;
+  Curvature_Quark_F2H1.at(1).at(11).at(1) = SMConstants.C_MassCharm*II*conj(Vcb)/vH;
+  Curvature_Quark_F2H1.at(2).at(8).at(2) = -SMConstants.C_MassTop*II/vH;
+  Curvature_Quark_F2H1.at(2).at(8).at(3) = SMConstants.C_MassTop/vH;
+  Curvature_Quark_F2H1.at(2).at(9).at(0) = -SMConstants.C_MassTop*conj(Vtd)/vH;
+  Curvature_Quark_F2H1.at(2).at(9).at(1) = SMConstants.C_MassTop*II*conj(Vtd)/vH;
+  Curvature_Quark_F2H1.at(2).at(10).at(0) = -SMConstants.C_MassTop*conj(Vts)/vH;
+  Curvature_Quark_F2H1.at(2).at(10).at(1) = SMConstants.C_MassTop*II*conj(Vts)/vH;
+  Curvature_Quark_F2H1.at(2).at(11).at(0) = -SMConstants.C_MassTop*conj(Vtb)/vH;
+  Curvature_Quark_F2H1.at(2).at(11).at(1) = SMConstants.C_MassTop*II*conj(Vtb)/vH;
+  Curvature_Quark_F2H1.at(3).at(6).at(0) = SMConstants.C_MassDown*Vud/vH;
+  Curvature_Quark_F2H1.at(3).at(6).at(1) = SMConstants.C_MassDown*II*Vud/vH;
+  Curvature_Quark_F2H1.at(3).at(7).at(0) = SMConstants.C_MassDown*Vcd/vH;
+  Curvature_Quark_F2H1.at(3).at(7).at(1) = SMConstants.C_MassDown*II*Vcd/vH;
+  Curvature_Quark_F2H1.at(3).at(8).at(0) = SMConstants.C_MassDown*Vtd/vH;
+  Curvature_Quark_F2H1.at(3).at(8).at(1) = SMConstants.C_MassDown*II*Vtd/vH;
+  Curvature_Quark_F2H1.at(3).at(9).at(2) = SMConstants.C_MassDown*II/vH;
+  Curvature_Quark_F2H1.at(3).at(9).at(3) = SMConstants.C_MassDown/vH;
+  Curvature_Quark_F2H1.at(4).at(6).at(0) = SMConstants.C_MassStrange*Vus/vH;
+  Curvature_Quark_F2H1.at(4).at(6).at(1) = SMConstants.C_MassStrange*II*Vus/vH;
+  Curvature_Quark_F2H1.at(4).at(7).at(0) = SMConstants.C_MassStrange*Vcs/vH;
+  Curvature_Quark_F2H1.at(4).at(7).at(1) = SMConstants.C_MassStrange*II*Vcs/vH;
+  Curvature_Quark_F2H1.at(4).at(8).at(0) = SMConstants.C_MassStrange*Vts/vH;
+  Curvature_Quark_F2H1.at(4).at(8).at(1) = SMConstants.C_MassStrange*II*Vts/vH;
+  Curvature_Quark_F2H1.at(4).at(10).at(2) = SMConstants.C_MassStrange*II/vH;
+  Curvature_Quark_F2H1.at(4).at(10).at(3) = SMConstants.C_MassStrange/vH;
+  Curvature_Quark_F2H1.at(5).at(6).at(0) = SMConstants.C_MassBottom*Vub/vH;
+  Curvature_Quark_F2H1.at(5).at(6).at(1) = SMConstants.C_MassBottom*II*Vub/vH;
+  Curvature_Quark_F2H1.at(5).at(7).at(0) = SMConstants.C_MassBottom*Vcb/vH;
+  Curvature_Quark_F2H1.at(5).at(7).at(1) = SMConstants.C_MassBottom*II*Vcb/vH;
+  Curvature_Quark_F2H1.at(5).at(8).at(0) = SMConstants.C_MassBottom*Vtb/vH;
+  Curvature_Quark_F2H1.at(5).at(8).at(1) = SMConstants.C_MassBottom*II*Vtb/vH;
+  Curvature_Quark_F2H1.at(5).at(11).at(2) = SMConstants.C_MassBottom*II/vH;
+  Curvature_Quark_F2H1.at(5).at(11).at(3) = SMConstants.C_MassBottom/vH;
+  Curvature_Quark_F2H1.at(6).at(0).at(2) = -SMConstants.C_MassUp*II/vH;
+  Curvature_Quark_F2H1.at(6).at(0).at(3) = SMConstants.C_MassUp/vH;
+  Curvature_Quark_F2H1.at(6).at(3).at(0) = SMConstants.C_MassDown*Vud/vH;
+  Curvature_Quark_F2H1.at(6).at(3).at(1) = SMConstants.C_MassDown*II*Vud/vH;
+  Curvature_Quark_F2H1.at(6).at(4).at(0) = SMConstants.C_MassStrange*Vus/vH;
+  Curvature_Quark_F2H1.at(6).at(4).at(1) = SMConstants.C_MassStrange*II*Vus/vH;
+  Curvature_Quark_F2H1.at(6).at(5).at(0) = SMConstants.C_MassBottom*Vub/vH;
+  Curvature_Quark_F2H1.at(6).at(5).at(1) = SMConstants.C_MassBottom*II*Vub/vH;
+  Curvature_Quark_F2H1.at(7).at(1).at(2) = -SMConstants.C_MassCharm*II/vH;
+  Curvature_Quark_F2H1.at(7).at(1).at(3) = SMConstants.C_MassCharm/vH;
+  Curvature_Quark_F2H1.at(7).at(3).at(0) = SMConstants.C_MassDown*Vcd/vH;
+  Curvature_Quark_F2H1.at(7).at(3).at(1) = SMConstants.C_MassDown*II*Vcd/vH;
+  Curvature_Quark_F2H1.at(7).at(4).at(0) = SMConstants.C_MassStrange*Vcs/vH;
+  Curvature_Quark_F2H1.at(7).at(4).at(1) = SMConstants.C_MassStrange*II*Vcs/vH;
+  Curvature_Quark_F2H1.at(7).at(5).at(0) = SMConstants.C_MassBottom*Vcb/vH;
+  Curvature_Quark_F2H1.at(7).at(5).at(1) = SMConstants.C_MassBottom*II*Vcb/vH;
+  Curvature_Quark_F2H1.at(8).at(2).at(2) = -SMConstants.C_MassTop*II/vH;
+  Curvature_Quark_F2H1.at(8).at(2).at(3) = SMConstants.C_MassTop/vH;
+  Curvature_Quark_F2H1.at(8).at(3).at(0) = SMConstants.C_MassDown*Vtd/vH;
+  Curvature_Quark_F2H1.at(8).at(3).at(1) = SMConstants.C_MassDown*II*Vtd/vH;
+  Curvature_Quark_F2H1.at(8).at(4).at(0) = SMConstants.C_MassStrange*Vts/vH;
+  Curvature_Quark_F2H1.at(8).at(4).at(1) = SMConstants.C_MassStrange*II*Vts/vH;
+  Curvature_Quark_F2H1.at(8).at(5).at(0) = SMConstants.C_MassBottom*Vtb/vH;
+  Curvature_Quark_F2H1.at(8).at(5).at(1) = SMConstants.C_MassBottom*II*Vtb/vH;
+  Curvature_Quark_F2H1.at(9).at(0).at(0) = -SMConstants.C_MassUp*conj(Vud)/vH;
+  Curvature_Quark_F2H1.at(9).at(0).at(1) = SMConstants.C_MassUp*II*conj(Vud)/vH;
+  Curvature_Quark_F2H1.at(9).at(1).at(0) = -SMConstants.C_MassCharm*conj(Vcd)/vH;
+  Curvature_Quark_F2H1.at(9).at(1).at(1) = SMConstants.C_MassCharm*II*conj(Vcd)/vH;
+  Curvature_Quark_F2H1.at(9).at(2).at(0) = -SMConstants.C_MassTop*conj(Vtd)/vH;
+  Curvature_Quark_F2H1.at(9).at(2).at(1) = SMConstants.C_MassTop*II*conj(Vtd)/vH;
+  Curvature_Quark_F2H1.at(9).at(3).at(2) = SMConstants.C_MassDown*II/vH;
+  Curvature_Quark_F2H1.at(9).at(3).at(3) = SMConstants.C_MassDown/vH;
+  Curvature_Quark_F2H1.at(10).at(0).at(0) = -SMConstants.C_MassUp*conj(Vus)/vH;
+  Curvature_Quark_F2H1.at(10).at(0).at(1) = SMConstants.C_MassUp*II*conj(Vus)/vH;
+  Curvature_Quark_F2H1.at(10).at(1).at(0) = -SMConstants.C_MassCharm*conj(Vcs)/vH;
+  Curvature_Quark_F2H1.at(10).at(1).at(1) = SMConstants.C_MassCharm*II*conj(Vcs)/vH;
+  Curvature_Quark_F2H1.at(10).at(2).at(0) = -SMConstants.C_MassTop*conj(Vts)/vH;
+  Curvature_Quark_F2H1.at(10).at(2).at(1) = SMConstants.C_MassTop*II*conj(Vts)/vH;
+  Curvature_Quark_F2H1.at(10).at(4).at(2) = SMConstants.C_MassStrange*II/vH;
+  Curvature_Quark_F2H1.at(10).at(4).at(3) = SMConstants.C_MassStrange/vH;
+  Curvature_Quark_F2H1.at(11).at(0).at(0) = -SMConstants.C_MassUp*conj(Vub)/vH;
+  Curvature_Quark_F2H1.at(11).at(0).at(1) = SMConstants.C_MassUp*II*conj(Vub)/vH;
+  Curvature_Quark_F2H1.at(11).at(1).at(0) = -SMConstants.C_MassCharm*conj(Vcb)/vH;
+  Curvature_Quark_F2H1.at(11).at(1).at(1) = SMConstants.C_MassCharm*II*conj(Vcb)/vH;
+  Curvature_Quark_F2H1.at(11).at(2).at(0) = -SMConstants.C_MassTop*conj(Vtb)/vH;
+  Curvature_Quark_F2H1.at(11).at(2).at(1) = SMConstants.C_MassTop*II*conj(Vtb)/vH;
+  Curvature_Quark_F2H1.at(11).at(5).at(2) = SMConstants.C_MassBottom*II/vH;
+  Curvature_Quark_F2H1.at(11).at(5).at(3) = SMConstants.C_MassBottom/vH;
 
 }
 

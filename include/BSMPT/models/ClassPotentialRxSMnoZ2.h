@@ -21,17 +21,17 @@ namespace Models
 {
 
 /**
- * @brief The Class_RxSM class
+ * @brief The Class_RxSMnoZ2 class
  * Lagrangian from https://arxiv.org/pdf/1512.05355 Eq. (11)
  */
-class Class_RxSM : public Class_Potential_Origin
+class Class_RxSMnoZ2 : public Class_Potential_Origin
 {
 public:
-  Class_RxSM(const ISMConstants &smConstants);
-  virtual ~Class_RxSM();
+  Class_RxSMnoZ2(const ISMConstants &smConstants);
+  virtual ~Class_RxSMnoZ2();
 
   // Choice of parameters of Lagrangian from https://arxiv.org/pdf/1512.05355 Eq. (11)
-  double lam, a1, a2, b3, b4, vS;
+  double lambda, a1, a2, b3, b4, vS;
 
   // Not an input parameter; set to the SM value
   double vH;
@@ -43,7 +43,7 @@ public:
 
   bool UnbrokenSingletPhase;
 
-  double dmusq, dlam, da1, da2, db2, db3, db4, dT1, dT2, dT3, dT4, dT5;
+  double dmusq, dlambda, da1, da2, db2, db3, db4, dT1, dT2, dT3, dT4, dT5;
 
   int pos_G1, pos_G2, pos_G0, pos_h, pos_H;
   int pos_h_SM, pos_h_H;
