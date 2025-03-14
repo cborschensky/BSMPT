@@ -8,6 +8,7 @@
  */
 
 #include <BSMPT/transition_tracer/transition_tracer.h>
+#include <BSMPT/utility/utility.h>
 
 namespace BSMPT
 {
@@ -464,6 +465,83 @@ TransitionTracer::TransitionTracer(user_input &input)
             tmp_pair_id = -1;
           }
         }
+
+
+        std::vector<std::vector<double> > dVif_history;
+        for (auto pair_id: pair_history) {
+          std::vector<double> dVif;
+          double Tc     = output_store.vec_trans_data[pair_id].crit_temp.value_or(EmptyValue);
+          double Tna    = output_store.vec_trans_data[pair_id].nucl_approx_temp.value_or(EmptyValue);
+          double Tn     = output_store.vec_trans_data[pair_id].nucl_temp.value_or(EmptyValue);
+          double Tp     = output_store.vec_trans_data[pair_id].perc_temp.value_or(EmptyValue);
+          double Tcompl = output_store.vec_trans_data[pair_id].compl_temp.value_or(EmptyValue);
+          if (std::isnan(Tc)) {
+            dVif.push_back(EmptyValue);
+          } else {
+            Minimum true_min  = vec_coex[pair_id].true_phase.Get(Tc);
+            Minimum false_min = vec_coex[pair_id].false_phase.Get(Tc);
+            dVif.push_back(false_min.potential - true_min.potential);
+          }
+
+          if (std::isnan(Tna)) {
+            dVif.push_back(EmptyValue);
+          } else {
+            Minimum true_min  = vec_coex[pair_id].true_phase.Get(Tna);
+            Minimum false_min = vec_coex[pair_id].false_phase.Get(Tna);
+            dVif.push_back(false_min.potential - true_min.potential);
+          }
+
+          if (std::isnan(Tn)) {
+            dVif.push_back(EmptyValue);
+          } else {
+            Minimum true_min  = vec_coex[pair_id].true_phase.Get(Tn);
+            Minimum false_min = vec_coex[pair_id].false_phase.Get(Tn);
+            dVif.push_back(false_min.potential - true_min.potential);
+          }
+
+          if (std::isnan(Tp)) {
+            dVif.push_back(EmptyValue);
+          } else {
+            Minimum true_min  = vec_coex[pair_id].true_phase.Get(Tp);
+            Minimum false_min = vec_coex[pair_id].false_phase.Get(Tp);
+            dVif.push_back(false_min.potential - true_min.potential);
+          }
+
+          if (std::isnan(Tcompl)) {
+            dVif.push_back(EmptyValue);
+          } else {
+            Minimum true_min  = vec_coex[pair_id].true_phase.Get(Tcompl);
+            Minimum false_min = vec_coex[pair_id].false_phase.Get(Tcompl);
+            dVif.push_back(false_min.potential - true_min.potential);
+          }
+
+          dVif_history.push_back(dVif);
+        }
+
+
+        // for (auto& ph: vac.PhasesList[transition_history.back()].MinimumPhaseVector) {
+        //   double t = ph.temp;
+        //   std::cout << "Last phase temperature=" << t << std::endl;
+        // }
+        //double t = vac.PhasesList[transition_history.back()].MinimumPhaseVector.front().temp;
+
+        // std::vector<double> p = vac.PhasesList[transition_history.back()].MinimumPhaseVector.front().point;
+        std::vector<double> p = vac.PhasesList[transition_history.back()].Get(0.).point;
+        std::cout << "input.modelPointer->get_vevTreeMin()=" << input.modelPointer->get_vevTreeMin() << std::endl;
+        std::cout << "input.modelPointer->get_vevTreeMin().size()=" << input.modelPointer->get_vevTreeMin().size() << std::endl;
+        std::cout << "p=" << p << std::endl;
+        std::cout << "p.size()=" << p.size() << std::endl;
+        std::cout << "dVif_history.size()=" << dVif_history.size() << std::endl;
+        std::cout << "dVif_history.front()=" << dVif_history.front() << std::endl;
+        bool isT0VEV = almost_the_same(input.modelPointer->get_vevTreeMin(), p, false, 0.01, 1e-5);
+        if (isT0VEV) {
+          std::cout << "SUCCESS: the last phase ends at T=0 in the EW minimum!" << std::endl;
+        } else {
+          std::cout << "FAILURE: the system is trapped and does not tunnel until T=0 into the correct EW minimum." << std::endl;
+        }
+        //auto pot = vac.PhasesList[transition_history.back()].MinimumPhaseVector.front().potential;
+
+
         output_store.transition_history =
             std::to_string(transition_history.at(0));
         if (transition_history.size() > 1)
