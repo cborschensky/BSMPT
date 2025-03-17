@@ -81,6 +81,7 @@ struct status_codes
   StatusEWSR status_ewsr                  = StatusEWSR::NotSet;
   StatusTracing status_tracing            = StatusTracing::NotSet;
   StatusCoexPair status_coex_pairs        = StatusCoexPair::NotSet;
+  StatusEWT0 status_ew_t0                 = StatusEWT0::NotSet; // CB added
   // index of vectors is coex_phase_id
   std::vector<StatusCrit> status_crit;
   std::vector<StatusGW> status_bounce_sol;
@@ -111,6 +112,12 @@ struct transition_data
   std::vector<double> perc_false_vev;
   std::vector<double> compl_true_vev;
   std::vector<double> compl_false_vev;
+
+  std::optional<double> crit_deltaVif; // CB added
+  std::optional<double> nucl_approx_deltaVif; // CB added
+  std::optional<double> nucl_deltaVif; // CB added
+  std::optional<double> perc_deltaVif; // CB added
+  std::optional<double> compl_deltaVif; // CB added
 };
 
 /**

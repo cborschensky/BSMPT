@@ -164,6 +164,28 @@ const std::unordered_map<StatusTemperature, std::string>
                               {StatusTemperature::Success, "success"},
                               {StatusTemperature::NotMet, "not_met"},
                               {StatusTemperature::NaN, "nan"}};
+// CB added v
+/**
+ * @brief Possible status for if the last phase ends up at T = 0
+ * in the EW minimum
+ *
+ */
+enum class StatusEWT0
+{
+  NotSet,
+  Success,
+  Failure
+};
+/**
+ * @brief Map to convert StatusEWT0 to strings
+ *
+ */
+const std::unordered_map<StatusEWT0, std::string> StatusEWT0ToString{
+    {StatusEWT0::NotSet, "not_set"},
+    {StatusEWT0::Success, "success"},
+    {StatusEWT0::Failure, "failure"}};
+// CB added ^
+
 /**
  * @brief Possible results for the GW and bounce_sol class.
  *
@@ -239,6 +261,16 @@ std::ostream &operator<<(std::ostream &os, const StatusGW &status);
  * @return std::ostream& buffer
  */
 std::ostream &operator<<(std::ostream &os, const StatusTemperature &status);
+// CB added v
+/**
+ * @brief Override << operator to handle StatusEWT0
+ *
+ * @param os ostream buffer
+ * @param status status to be printed
+ * @return std::ostream& buffer
+ */
+std::ostream &operator<<(std::ostream &os, const StatusEWT0 &status);
+// CB added ^
 
 /**
  * @brief struct to store minimum and temperature

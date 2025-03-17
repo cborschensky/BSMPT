@@ -153,7 +153,8 @@ try
           << linestr << sep << parameters.second << sep
           << output.status.status_nlo_stability << sep
           << output.status.status_ewsr << sep << output.status.status_tracing
-          << sep << output.status.status_coex_pairs << sep << time << sep;
+          << sep << output.status.status_coex_pairs << sep
+          << output.status.status_ew_t0 << sep << time << sep; // CB added
 
       if ((output.status.status_tracing == StatusTracing::Success) &&
           (output.status.status_coex_pairs == StatusCoexPair::Success))
@@ -166,24 +167,29 @@ try
               << output.vec_trans_data.at(i).crit_temp.value_or(EmptyValue)
               << sep << output.vec_trans_data.at(i).crit_false_vev << sep
               << output.vec_trans_data.at(i).crit_true_vev << sep
+              << output.vec_trans_data.at(i).crit_deltaVif.value_or(EmptyValue) << sep // CB added
               << output.status.status_bounce_sol.at(i) << sep
               << output.status.status_nucl_approx.at(i) << sep
               << output.vec_trans_data.at(i).nucl_approx_temp.value_or(
                      EmptyValue)
               << sep << output.vec_trans_data.at(i).nucl_approx_false_vev << sep
               << output.vec_trans_data.at(i).nucl_approx_true_vev << sep
+              << output.vec_trans_data.at(i).nucl_approx_deltaVif.value_or(EmptyValue) << sep // CB added
               << output.status.status_nucl.at(i) << sep
               << output.vec_trans_data.at(i).nucl_temp.value_or(EmptyValue)
               << sep << output.vec_trans_data.at(i).nucl_false_vev << sep
               << output.vec_trans_data.at(i).nucl_true_vev << sep
+              << output.vec_trans_data.at(i).nucl_deltaVif.value_or(EmptyValue) << sep // CB added
               << output.status.status_perc.at(i) << sep
               << output.vec_trans_data.at(i).perc_temp.value_or(EmptyValue)
               << sep << output.vec_trans_data.at(i).perc_false_vev << sep
               << output.vec_trans_data.at(i).perc_true_vev << sep
+              << output.vec_trans_data.at(i).perc_deltaVif.value_or(EmptyValue) << sep // CB added
               << output.status.status_compl.at(i) << sep
               << output.vec_trans_data.at(i).compl_temp.value_or(EmptyValue)
               << sep << output.vec_trans_data.at(i).compl_false_vev << sep
-              << output.vec_trans_data.at(i).compl_true_vev << sep;
+              << output.vec_trans_data.at(i).compl_true_vev << sep
+              << output.vec_trans_data.at(i).compl_deltaVif.value_or(EmptyValue) << sep; // CB added
         }
       }
 
