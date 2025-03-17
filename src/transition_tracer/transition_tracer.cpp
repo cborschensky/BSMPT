@@ -145,6 +145,8 @@ TransitionTracer::TransitionTracer(user_input &input)
             Minimum false_phase_crit = pair.false_phase.Get(pair.crit_temp);
             new_transition_data.crit_true_vev = true_phase_crit.point;
             new_transition_data.crit_false_vev = false_phase_crit.point;
+            // Calculate the difference of Veff between the false and the true minimum;
+            // in the case of the critical temperature, this should be zero or close to zero
             new_transition_data.crit_deltaVif = false_phase_crit.potential - true_phase_crit.potential;
             // CB changes ^
 
@@ -189,6 +191,7 @@ TransitionTracer::TransitionTracer(user_input &input)
                 Minimum false_phase_nucl_approx = pair.false_phase.Get(new_transition_data.nucl_approx_temp.value_or(EmptyValue));
                 new_transition_data.nucl_approx_true_vev = true_phase_nucl_approx.point;
                 new_transition_data.nucl_approx_false_vev = false_phase_nucl_approx.point;
+                // Calculate the difference of Veff between the false and the true minimum
                 new_transition_data.nucl_approx_deltaVif = false_phase_nucl_approx.potential - true_phase_nucl_approx.potential;
                 // CB changes ^
               }
@@ -221,6 +224,7 @@ TransitionTracer::TransitionTracer(user_input &input)
                 Minimum false_phase_nucl = pair.false_phase.Get(new_transition_data.nucl_temp.value_or(EmptyValue));
                 new_transition_data.nucl_true_vev = true_phase_nucl.point;
                 new_transition_data.nucl_false_vev = false_phase_nucl.point;
+                // Calculate the difference of Veff between the false and the true minimum
                 new_transition_data.nucl_deltaVif = false_phase_nucl.potential - true_phase_nucl.potential;
                 // CB changes ^
               }
@@ -253,6 +257,7 @@ TransitionTracer::TransitionTracer(user_input &input)
                 Minimum false_phase_perc = pair.false_phase.Get(new_transition_data.perc_temp.value_or(EmptyValue));
                 new_transition_data.perc_true_vev = true_phase_perc.point;
                 new_transition_data.perc_false_vev = false_phase_perc.point;
+                // Calculate the difference of Veff between the false and the true minimum
                 new_transition_data.perc_deltaVif = false_phase_perc.potential - true_phase_perc.potential;
                 // CB changes ^
               }
@@ -287,6 +292,7 @@ TransitionTracer::TransitionTracer(user_input &input)
                 Minimum false_phase_compl = pair.false_phase.Get(new_transition_data.compl_temp.value_or(EmptyValue));
                 new_transition_data.compl_true_vev = true_phase_compl.point;
                 new_transition_data.compl_false_vev = false_phase_compl.point;
+                // Calculate the difference of Veff between the false and the true minimum
                 new_transition_data.compl_deltaVif = false_phase_compl.potential - true_phase_compl.potential;
                 // CB changes ^
               }
@@ -513,84 +519,16 @@ TransitionTracer::TransitionTracer(user_input &input)
 
 
         // CB changes & tests v
-        // std::vector<std::vector<double> > deltaVif_history;
-        // for (auto pair_id: pair_history) {
-        //   std::vector<double> deltaVif;
-        //   double Tc     = output_store.vec_trans_data[pair_id].crit_temp.value_or(EmptyValue);
-        //   double Tna    = output_store.vec_trans_data[pair_id].nucl_approx_temp.value_or(EmptyValue);
-        //   double Tn     = output_store.vec_trans_data[pair_id].nucl_temp.value_or(EmptyValue);
-        //   double Tp     = output_store.vec_trans_data[pair_id].perc_temp.value_or(EmptyValue);
-        //   double Tcompl = output_store.vec_trans_data[pair_id].compl_temp.value_or(EmptyValue);
-        //   if (std::isnan(Tc)) {
-        //     deltaVif.push_back(EmptyValue);
-        //   } else {
-        //     Minimum true_min  = vec_coex[pair_id].true_phase.Get(Tc);
-        //     Minimum false_min = vec_coex[pair_id].false_phase.Get(Tc);
-        //     deltaVif.push_back(false_min.potential - true_min.potential);
-        //   }
-        // 
-        //   if (std::isnan(Tna)) {
-        //     deltaVif.push_back(EmptyValue);
-        //   } else {
-        //     Minimum true_min  = vec_coex[pair_id].true_phase.Get(Tna);
-        //     Minimum false_min = vec_coex[pair_id].false_phase.Get(Tna);
-        //     deltaVif.push_back(false_min.potential - true_min.potential);
-        //   }
-        // 
-        //   if (std::isnan(Tn)) {
-        //     deltaVif.push_back(EmptyValue);
-        //   } else {
-        //     Minimum true_min  = vec_coex[pair_id].true_phase.Get(Tn);
-        //     Minimum false_min = vec_coex[pair_id].false_phase.Get(Tn);
-        //     deltaVif.push_back(false_min.potential - true_min.potential);
-        //   }
-        // 
-        //   if (std::isnan(Tp)) {
-        //     deltaVif.push_back(EmptyValue);
-        //   } else {
-        //     Minimum true_min  = vec_coex[pair_id].true_phase.Get(Tp);
-        //     Minimum false_min = vec_coex[pair_id].false_phase.Get(Tp);
-        //     deltaVif.push_back(false_min.potential - true_min.potential);
-        //   }
-        // 
-        //   if (std::isnan(Tcompl)) {
-        //     deltaVif.push_back(EmptyValue);
-        //   } else {
-        //     Minimum true_min  = vec_coex[pair_id].true_phase.Get(Tcompl);
-        //     Minimum false_min = vec_coex[pair_id].false_phase.Get(Tcompl);
-        //     deltaVif.push_back(false_min.potential - true_min.potential);
-        //   }
-        // 
-        //   deltaVif_history.push_back(deltaVif);
-        // }
-
-
-        // // for (auto& ph: vac.PhasesList[transition_history.back()].MinimumPhaseVector) {
-        // //   double t = ph.temp;
-        // //   std::cout << "Last phase temperature=" << t << std::endl;
-        // // }
-        // //double t = vac.PhasesList[transition_history.back()].MinimumPhaseVector.front().temp;
-
-        // // std::vector<double> p = vac.PhasesList[transition_history.back()].MinimumPhaseVector.front().point;
+        // Check if the last reached phase (as in transition_history.back()) corresponds to
+        // the correct EW phase at T = 0 with the minimum as given in the model definition
+        // (from modelPointer->get_vevTreeMin())
         std::vector<double> p = vac.PhasesList[transition_history.back()].Get(0.).point;
-        // std::cout << "input.modelPointer->get_vevTreeMin()=" << input.modelPointer->get_vevTreeMin() << std::endl;
-        // std::cout << "input.modelPointer->get_vevTreeMin().size()=" << input.modelPointer->get_vevTreeMin().size() << std::endl;
-        // std::cout << "p=" << p << std::endl;
-        // std::cout << "p.size()=" << p.size() << std::endl;
-        // std::cout << "deltaVif_history.size()=" << deltaVif_history.size() << std::endl;
-        // std::cout << "deltaVif_history.front()=" << deltaVif_history.front() << std::endl;
         bool isT0VEV = almost_the_same(input.modelPointer->get_vevTreeMin(), p, false, 0.01, 1e-5);
         if (isT0VEV) {
           output_store.status.status_ew_t0 = BSMPT::StatusEWT0::Success;
         } else {
           output_store.status.status_ew_t0 = BSMPT::StatusEWT0::Failure;
         }
-        // if (isT0VEV) {
-        //   std::cout << "SUCCESS: the last phase ends at T=0 in the EW minimum!" << std::endl;
-        // } else {
-        //   std::cout << "FAILURE: the system is trapped and does not tunnel until T=0 into the correct EW minimum." << std::endl;
-        // }
-        // //auto pot = vac.PhasesList[transition_history.back()].MinimumPhaseVector.front().potential;
         // CB changes & tests ^
 
 
