@@ -1312,19 +1312,21 @@ void CoexPhases::CalculateTc()
                        100,
                        35);
   std::vector<double> plotT, plotDeltaV, plot0;
-  for (double T = T_low; T <= T_high; T += (T_high - T_low) / 100)
-  {
-    plotT.push_back(T);
-    plotDeltaV.push_back(deltaV(T));
-    plot0.push_back(0);
-  }
-  plotter.addPlot(plotT, plot0, "", '.');
-  plotter.addPlot(plotT, plotDeltaV, "dV", '*');
+  if (T_high > T_low) { // leave this for now to avoid memory overflow if T_high == T_low
+    for (double T = T_low; T <= T_high; T += (T_high - T_low) / 100)
+    {
+      plotT.push_back(T);
+      plotDeltaV.push_back(deltaV(T));
+      plot0.push_back(0);
+    }
+    plotter.addPlot(plotT, plot0, "", '.');
+    plotter.addPlot(plotT, plotDeltaV, "dV", '*');
 
-  plotter.xlabel("T (GeV)");
-  plotter.ylabel("dV (GeV)");
-  plotter.show(ss);
-  Logger::Write(LoggingLevel::MinTracerDetailed, ss.str());
+    plotter.xlabel("T (GeV)");
+    plotter.ylabel("dV (GeV)");
+    plotter.show(ss);
+    Logger::Write(LoggingLevel::MinTracerDetailed, ss.str());
+  }
 
   if (deltaV(T_high) > 0 and deltaV(T_low) > 0)
   {
