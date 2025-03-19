@@ -522,10 +522,13 @@ TransitionTracer::TransitionTracer(user_input &input)
         // Check if the last reached phase (as in transition_history.back()) corresponds to
         // the correct EW phase at T = 0 with the minimum as given in the model definition
         // (from modelPointer->get_vevTreeMin())
-        std::vector<double> p = vac.PhasesList[transition_history.back()].Get(0.).point;
-        bool isT0VEV = almost_the_same(input.modelPointer->get_vevTreeMin(), p, false, 0.01, 1e-5);
-        if (isT0VEV) {
-          output_store.status.status_ew_t0 = BSMPT::StatusEWT0::Success;
+        auto p = vac.PhasesList[transition_history.back()];
+        if (p.T_low > 0.) {
+          if (almost_the_same(input.modelPointer->get_vevTreeMin(), p.Get(0.).point, false, 0.01, 1e-5)) {
+            output_store.status.status_ew_t0 = BSMPT::StatusEWT0::Success;
+          } else {
+            output_store.status.status_ew_t0 = BSMPT::StatusEWT0::Failure;
+          }
         } else {
           output_store.status.status_ew_t0 = BSMPT::StatusEWT0::Failure;
         }
