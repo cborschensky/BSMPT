@@ -523,14 +523,15 @@ TransitionTracer::TransitionTracer(user_input &input)
         // the correct EW phase at T = 0 with the minimum as given in the model definition
         // (from modelPointer->get_vevTreeMin())
         auto p = vac.PhasesList[transition_history.back()];
-        if (p.T_low > 0.) {
-          output_store.status.status_ew_t0 = BSMPT::StatusEWT0::Failure;
-        } else {
-          if (almost_the_same(input.modelPointer->get_vevTreeMin(), p.Get(0.).point, false, 0.01, 1e-5)) {
-            output_store.status.status_ew_t0 = BSMPT::StatusEWT0::Success;
-          } else {
-            output_store.status.status_ew_t0 = BSMPT::StatusEWT0::Failure;
-          }
+        if (p.T_low > 0. ||
+          not almost_the_same(input.modelPointer->get_vevTreeMin(), p.Get(0.).point,
+                              false, 0.01, 1e-5))
+        {
+          output_store.status.status_last_phase_ew = BSMPT::StatusLastPhaseEW::Failure;
+        }
+        else
+        {
+          output_store.status.status_last_phase_ew = BSMPT::StatusLastPhaseEW::Success;
         }
         // CB changes & tests ^
 

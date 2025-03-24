@@ -81,7 +81,7 @@ struct status_codes
   StatusEWSR status_ewsr                  = StatusEWSR::NotSet;
   StatusTracing status_tracing            = StatusTracing::NotSet;
   StatusCoexPair status_coex_pairs        = StatusCoexPair::NotSet;
-  StatusEWT0 status_ew_t0                 = StatusEWT0::NotSet; // CB added
+  StatusLastPhaseEW status_last_phase_ew  = StatusLastPhaseEW::NotSet; // CB added
   // index of vectors is coex_phase_id
   std::vector<StatusCrit> status_crit;
   std::vector<StatusGW> status_bounce_sol;

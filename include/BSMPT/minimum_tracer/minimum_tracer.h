@@ -170,7 +170,7 @@ const std::unordered_map<StatusTemperature, std::string>
  * in the EW minimum
  *
  */
-enum class StatusEWT0
+enum class StatusLastPhaseEW
 {
   NotSet,
   Success,
@@ -180,10 +180,10 @@ enum class StatusEWT0
  * @brief Map to convert StatusEWT0 to strings
  *
  */
-const std::unordered_map<StatusEWT0, std::string> StatusEWT0ToString{
-    {StatusEWT0::NotSet, "not_set"},
-    {StatusEWT0::Success, "success"},
-    {StatusEWT0::Failure, "failure"}};
+const std::unordered_map<StatusLastPhaseEW, std::string> StatusLastPhaseEWToString{
+    {StatusLastPhaseEW::NotSet, "not_set"},
+    {StatusLastPhaseEW::Success, "success"},
+    {StatusLastPhaseEW::Failure, "failure"}};
 // CB added ^
 
 /**
@@ -263,13 +263,13 @@ std::ostream &operator<<(std::ostream &os, const StatusGW &status);
 std::ostream &operator<<(std::ostream &os, const StatusTemperature &status);
 // CB added v
 /**
- * @brief Override << operator to handle StatusEWT0
+ * @brief Override << operator to handle StatusLastPhaseEW
  *
  * @param os ostream buffer
  * @param status status to be printed
  * @return std::ostream& buffer
  */
-std::ostream &operator<<(std::ostream &os, const StatusEWT0 &status);
+std::ostream &operator<<(std::ostream &os, const StatusLastPhaseEW &status);
 // CB added ^
 
 /**

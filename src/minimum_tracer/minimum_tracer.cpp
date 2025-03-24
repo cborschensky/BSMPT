@@ -50,11 +50,13 @@ std::ostream &operator<<(std::ostream &os, const StatusTemperature &status)
   os << StatusTemperatureToString.at(status);
   return os;
 }
-std::ostream &operator<<(std::ostream &os, const StatusEWT0 &status)
+// CB added v
+std::ostream &operator<<(std::ostream &os, const StatusLastPhaseEW &status)
 {
-  os << StatusEWT0ToString.at(status);
+  os << StatusLastPhaseEWToString.at(status);
   return os;
 }
+// CB added ^
 
 std::vector<double> MinimumTracer::LocateMinimum(
     const std::vector<double> &guess_In,
@@ -2767,7 +2769,7 @@ std::vector<std::string> MinimumTracer::GetLegend(const int &num_coex_phases,
   legend.push_back("status_ewsr");
   legend.push_back("status_tracing");
   legend.push_back("status_coex_pairs");
-  legend.push_back("status_ew_t0"); // CB added
+  legend.push_back("status_last_phase_ew"); // CB added
   legend.push_back("runtime");
 
   for (int i = 0; i < num_coex_phases; i++)

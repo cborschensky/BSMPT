@@ -154,7 +154,7 @@ try
           << output.status.status_nlo_stability << sep
           << output.status.status_ewsr << sep << output.status.status_tracing
           << sep << output.status.status_coex_pairs << sep
-          << output.status.status_ew_t0 << sep << time << sep; // CB added
+          << output.status.status_last_phase_ew << sep << time << sep; // CB added
 
       if ((output.status.status_tracing == StatusTracing::Success) &&
           (output.status.status_coex_pairs == StatusCoexPair::Success))
