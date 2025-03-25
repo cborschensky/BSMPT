@@ -50,6 +50,13 @@ std::ostream &operator<<(std::ostream &os, const StatusTemperature &status)
   os << StatusTemperatureToString.at(status);
   return os;
 }
+// CB added v
+std::ostream &operator<<(std::ostream &os, const StatusLastPhaseEW &status)
+{
+  os << StatusLastPhaseEWToString.at(status);
+  return os;
+}
+// CB added ^
 
 std::vector<double> MinimumTracer::LocateMinimum(
     const std::vector<double> &guess_In,
@@ -1307,19 +1314,21 @@ void CoexPhases::CalculateTc()
                        100,
                        35);
   std::vector<double> plotT, plotDeltaV, plot0;
-  for (double T = T_low; T <= T_high; T += (T_high - T_low) / 100)
-  {
-    plotT.push_back(T);
-    plotDeltaV.push_back(deltaV(T));
-    plot0.push_back(0);
-  }
-  plotter.addPlot(plotT, plot0, "", '.');
-  plotter.addPlot(plotT, plotDeltaV, "dV", '*');
+  if (T_high > T_low) { // CB added; leave this for now to avoid memory overflow if T_high == T_low
+    for (double T = T_low; T <= T_high; T += (T_high - T_low) / 100)
+    {
+      plotT.push_back(T);
+      plotDeltaV.push_back(deltaV(T));
+      plot0.push_back(0);
+    }
+    plotter.addPlot(plotT, plot0, "", '.');
+    plotter.addPlot(plotT, plotDeltaV, "dV", '*');
 
-  plotter.xlabel("T (GeV)");
-  plotter.ylabel("dV (GeV)");
-  plotter.show(ss);
-  Logger::Write(LoggingLevel::MinTracerDetailed, ss.str());
+    plotter.xlabel("T (GeV)");
+    plotter.ylabel("dV (GeV)");
+    plotter.show(ss);
+    Logger::Write(LoggingLevel::MinTracerDetailed, ss.str());
+  }
 
   if (deltaV(T_high) > 0 and deltaV(T_low) > 0)
   {
@@ -2760,6 +2769,7 @@ std::vector<std::string> MinimumTracer::GetLegend(const int &num_coex_phases,
   legend.push_back("status_ewsr");
   legend.push_back("status_tracing");
   legend.push_back("status_coex_pairs");
+  legend.push_back("status_last_phase_ew"); // CB added
   legend.push_back("runtime");
 
   for (int i = 0; i < num_coex_phases; i++)
@@ -2825,6 +2835,7 @@ std::vector<std::string> MinimumTracer::GetLegend(const int &num_coex_phases,
       legend.push_back(this->modelPointer->addLegendVEV().at(j).append(
           "_compl_true_" + std::to_string(i)));
     }
+
     if (do_gw_calc)
     {
       legend.push_back("status_gw_" + std::to_string(i));
