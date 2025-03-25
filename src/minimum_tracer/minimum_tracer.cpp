@@ -1314,7 +1314,7 @@ void CoexPhases::CalculateTc()
                        100,
                        35);
   std::vector<double> plotT, plotDeltaV, plot0;
-  if (T_high > T_low) { // leave this for now to avoid memory overflow if T_high == T_low
+  if (T_high > T_low) { // CB added; leave this for now to avoid memory overflow if T_high == T_low
     for (double T = T_low; T <= T_high; T += (T_high - T_low) / 100)
     {
       plotT.push_back(T);
