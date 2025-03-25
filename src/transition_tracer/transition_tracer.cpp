@@ -518,22 +518,22 @@ TransitionTracer::TransitionTracer(user_input &input)
         }
 
 
-        // CB changes & tests v
+        // CB added v
         // Check if the last reached phase (as in transition_history.back()) corresponds to
         // the correct EW phase at T = 0 with the minimum as given in the model definition
         // (from modelPointer->get_vevTreeMin())
         auto p = vac.PhasesList[transition_history.back()];
         if (p.T_low > 0. ||
-          not almost_the_same(input.modelPointer->get_vevTreeMin(), p.Get(0.).point,
-                              false, 0.01, 1e-5))
+            !almost_the_same(input.modelPointer->get_vevTreeMin(),
+                             p.Get(0.).point, false, 0.01, 1e-5))
         {
-          output_store.status.status_last_phase_ew = BSMPT::StatusLastPhaseEW::Failure;
+          output_store.status.status_last_phase_ew = StatusLastPhaseEW::Failure;
         }
         else
         {
-          output_store.status.status_last_phase_ew = BSMPT::StatusLastPhaseEW::Success;
+          output_store.status.status_last_phase_ew = StatusLastPhaseEW::Success;
         }
-        // CB changes & tests ^
+        // CB added ^
 
 
         output_store.transition_history =
