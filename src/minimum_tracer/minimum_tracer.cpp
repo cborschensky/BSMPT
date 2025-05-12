@@ -148,7 +148,11 @@ double MinimumTracer::SmallestEigenvalue(
     current_min = std::min(element.real(), current_min);
   // If the "SmallestEigenvalue" is zero, it can become negative due to
   // numerical errors. To prevent unstable behaviour we add a small constant.
+
+  // CB: change it to 1e-3, which coincides with the value of HessianDiagonalShift
+  //     used in LocateMinimum()
   return current_min + 1e-7;
+  // return current_min + 1e-3;
 }
 
 std::vector<double>
@@ -391,56 +395,61 @@ MinimumTracer::TrackPhase(double &globMinEndT,
       // It is a nearby stationary point!
       if (SmallestEigenvalue(new_point, Hessian) < 0)
       {
-        if (IsInMin == -1)
-        {
-          zeroTemp = FindZeroSmallestEigenvalue(
-              point, currentT - dT, new_point, currentT);
-          if (zeroTemp.back() > 0)
-          {
-            currentT = zeroTemp.back();
-            zeroTemp.pop_back();
-            // Reduce the VEV into the same sector
-            ReduceVEV(zeroTemp);
-            // Remove flat directions
-            ConvertToNonFlatDirections(zeroTemp);
-            newMinimum.point     = zeroTemp;
-            newMinimum.temp      = currentT;
-            newMinimum.potential = V(zeroTemp) * (1 + currentT * currentT);
+        // CB: saddle point (i.e. end of phase), move back one step
+        //     and reduce step size to approach it more slowly
+        currentT -= dT;
+        dT /= 2.;
 
-            if (old_min_is_global) // check if newMinimum is
-                                   // still global minimum
-            {
-              IsGlobMin(newMinimum);
-              if (!newMinimum.is_glob_min)
-              {
-                if (output)
-                  Logger::Write(
-                      LoggingLevel::MinTracerDetailed,
-                      "Phase no longer coincides with global minimum at " +
-                          std::to_string(newMinimum.temp));
-                globMinEndT       = newMinimum.temp;
-                old_min_is_global = false;
-              }
-            }
-
-            MinimumList.push_back(newMinimum);
-          }
-          // End tracking
-          break;
-        }
-        else
-        {
-          ss << "Calculation of phase tracker failed. T  = " << currentT
-             << " GeV\t|\t Final T = " << finalT << " GeV\t|\t"
-             << LengthGradient << "\t|\t"
-             << SmallestEigenvalue(new_point, Hessian) << "\t";
-          // Sucess saddle point!
-          ss << "\033[1;31m.\033[0m";
-          if (output) Logger::Write(LoggingLevel::MinTracerDetailed, ss.str());
-          ss.str(std::string());
-          return MinimumList; // return if starts in a saddle point
-        }
-        IsInMin = 1;
+        // if (IsInMin == -1)
+        // {
+        //   zeroTemp = FindZeroSmallestEigenvalue(
+        //       point, currentT - dT, new_point, currentT);
+        //   if (zeroTemp.back() > 0)
+        //   {
+        //     currentT = zeroTemp.back();
+        //     zeroTemp.pop_back();
+        //     // Reduce the VEV into the same sector
+        //     ReduceVEV(zeroTemp);
+        //     // Remove flat directions
+        //     ConvertToNonFlatDirections(zeroTemp);
+        //     newMinimum.point     = zeroTemp;
+        //     newMinimum.temp      = currentT;
+        //     newMinimum.potential = V(zeroTemp) * (1 + currentT * currentT);
+        // 
+        //     if (old_min_is_global) // check if newMinimum is
+        //                            // still global minimum
+        //     {
+        //       IsGlobMin(newMinimum);
+        //       if (!newMinimum.is_glob_min)
+        //       {
+        //         if (output)
+        //           Logger::Write(
+        //               LoggingLevel::MinTracerDetailed,
+        //               "Phase no longer coincides with global minimum at " +
+        //                   std::to_string(newMinimum.temp));
+        //         globMinEndT       = newMinimum.temp;
+        //         old_min_is_global = false;
+        //       }
+        //     }
+        // 
+        //     MinimumList.push_back(newMinimum);
+        //   }
+        //   // End tracking
+        //   break;
+        // }
+        // else
+        // {
+        //   ss << "Calculation of phase tracker failed. T  = " << currentT
+        //      << " GeV\t|\t Final T = " << finalT << " GeV\t|\t"
+        //      << LengthGradient << "\t|\t"
+        //      << SmallestEigenvalue(new_point, Hessian) << "\t";
+        //   // Sucess saddle point!
+        //   ss << "\033[1;31m.\033[0m";
+        //   if (output) Logger::Write(LoggingLevel::MinTracerDetailed, ss.str());
+        //   ss.str(std::string());
+        //   return MinimumList; // return if starts in a saddle point
+        // }
+        // IsInMin = 1;
       }
       else
       {
@@ -479,8 +488,11 @@ MinimumTracer::TrackPhase(double &globMinEndT,
           if (abs(initialdT) <= abs(dT)) dT = initialdT;
         }
         IsInMin = -1;
+        // CB: moved here instead of outside the "else"
+        point = new_point;
       }
-      point = new_point;
+      // CB: see above
+      // point = new_point;
     }
 
     // Make sure that or step is not bigger than it should be and we overshot
@@ -489,8 +501,14 @@ MinimumTracer::TrackPhase(double &globMinEndT,
     bool SafeStep = abs(finalT - currentT) > abs(dT);
     if (SafeStep)
       currentT += dT;
-    else
+    // CB: v
+    // else
+    //   currentT = finalT;
+    else {
+      dT = finalT - currentT;
       currentT = finalT;
+    }
+    // CB: ^
   }
   if (output) Logger::Write(LoggingLevel::MinTracerDetailed, ss.str());
   if (output)
@@ -543,6 +561,8 @@ MinimumTracer::TrackPhase(const std::vector<double> &point_In,
      << " | Starting minimum at = " << point << "\n";
   while ((finalT - currentT) / dT >= 0)
   {
+    // std::cout << "##### CB: currentT=" << currentT << ", dT=" << dT << ", finalT=" << finalT << std::endl;
+    // std::cout << "##### CB: point=" << point << std::endl;
     std::function<double(std::vector<double>)> V = [&](std::vector<double> vev)
     {
       // Potential wrapper
@@ -627,42 +647,56 @@ MinimumTracer::TrackPhase(const std::vector<double> &point_In,
     }
     else
     {
+      std::cout << "##### CB, point=" << point << " , new_point=" << new_point << std::endl;
+      std::cout << "##### CB, SmallestEigenvalue(point)=" << SmallestEigenvalue(point, Hessian) << " , SmallestEigenvalue(new_point)=" << SmallestEigenvalue(new_point, Hessian) << std::endl;
       // It is a nearby stationary point!
       if (SmallestEigenvalue(new_point, Hessian) < 0)
       {
-        if (IsInMin == -1)
-        {
-          zeroTemp = FindZeroSmallestEigenvalue(
-              point, currentT - dT, new_point, currentT);
-          if (zeroTemp.back() > 0)
-          {
-            currentT = zeroTemp.back();
-            zeroTemp.pop_back();
-            // Reduce the VEV into the same sector
-            ReduceVEV(zeroTemp);
-            // Remove flat directions
-            ConvertToNonFlatDirections(zeroTemp);
-            newMinimum.point     = zeroTemp;
-            newMinimum.temp      = currentT;
-            newMinimum.potential = V(zeroTemp) * (1 + currentT * currentT);
-            MinimumList.push_back(newMinimum);
-          }
-          // End tracking
-          break;
+        // // CB: saddle point (i.e. end of phase), move back one step
+        // //     and reduce step size to approach it more slowly
+        // std::cout << "##### CB: stationary point: currentT=" << currentT << ", dT=" << dT << std::endl;
+        if (currentT == initialT) {
+          point = new_point;
+          continue;
         }
-        else
-        {
-          ss << "Calculation of Tc or phase tracker failed. T  = " << currentT
-             << " GeV\t|\t Final T = " << finalT << " GeV\t|\t"
-             << LengthGradient << "\t|\t"
-             << SmallestEigenvalue(new_point, Hessian) << "\t";
-          // Sucess saddle point!
-          ss << "\033[1;31m.\033[0m";
-          if (output) Logger::Write(LoggingLevel::MinTracerDetailed, ss.str());
-          ss.str(std::string());
-          return MinimumList; // return if starts in a saddle point
-        }
-        IsInMin = 1;
+
+        currentT -= dT;
+        dT /= 2.;
+        // std::cout << "##### CB: stationary point after: currentT=" << currentT << ", dT=" << dT << std::endl;
+
+        // if (IsInMin == -1)
+        // {
+        //   zeroTemp = FindZeroSmallestEigenvalue(
+        //       point, currentT - dT, new_point, currentT);
+        //   if (zeroTemp.back() > 0)
+        //   {
+        //     currentT = zeroTemp.back();
+        //     zeroTemp.pop_back();
+        //     // Reduce the VEV into the same sector
+        //     ReduceVEV(zeroTemp);
+        //     // Remove flat directions
+        //     ConvertToNonFlatDirections(zeroTemp);
+        //     newMinimum.point     = zeroTemp;
+        //     newMinimum.temp      = currentT;
+        //     newMinimum.potential = V(zeroTemp) * (1 + currentT * currentT);
+        //     MinimumList.push_back(newMinimum);
+        //   }
+        //   // End tracking
+        //   break;
+        // }
+        // else
+        // {
+        //   ss << "Calculation of Tc or phase tracker failed. T  = " << currentT
+        //      << " GeV\t|\t Final T = " << finalT << " GeV\t|\t"
+        //      << LengthGradient << "\t|\t"
+        //      << SmallestEigenvalue(new_point, Hessian) << "\t";
+        //   // Sucess saddle point!
+        //   ss << "\033[1;31m.\033[0m";
+        //   if (output) Logger::Write(LoggingLevel::MinTracerDetailed, ss.str());
+        //   ss.str(std::string());
+        //   return MinimumList; // return if starts in a saddle point
+        // }
+        // IsInMin = 1;
       }
       else
       {
@@ -684,8 +718,11 @@ MinimumTracer::TrackPhase(const std::vector<double> &point_In,
           if (abs(initialdT) <= abs(dT)) dT = initialdT;
         }
         IsInMin = -1;
+        // CB: moved here instead of outside the "else"
+        point = new_point;
       }
-      point = new_point;
+      // CB: see above
+      // point = new_point;
     }
 
     // Make sure that or step is not bigger than it should be and we overshot
@@ -694,9 +731,17 @@ MinimumTracer::TrackPhase(const std::vector<double> &point_In,
     bool SafeStep = abs(finalT - currentT) > abs(dT);
     if (SafeStep)
       currentT += dT;
-    else
+    // CB: fixed setting dT correctly v
+    // else
+      // currentT = finalT;
+    else {
+      dT = finalT - currentT;
+      // currentT += dT;
       currentT = finalT;
+    }
+    // CB: ^
   }
+
   if (output) Logger::Write(LoggingLevel::MinTracerDetailed, ss.str());
   if (output)
     Logger::Write(LoggingLevel::MinTracerDetailed,
