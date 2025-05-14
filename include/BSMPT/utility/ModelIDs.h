@@ -19,9 +19,9 @@ enum class ModelIDs
   N2HDM,
   CXSM,
   CPINTHEDARK,
-  SM,
   RXSM,
   RXSMNOZ2,
+  SM,
 
   // Here you start adding your models
   TEMPLATE,

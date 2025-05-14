@@ -6,10 +6,10 @@
 
 #include <BSMPT/models/IncludeAllModels.h>
 #include <BSMPT/utility/utility.h>
+#include <complex>
 #include <ostream>
 #include <sstream>
 #include <string>
-#include <complex>
 
 /**
  * @file
@@ -129,14 +129,12 @@ bool almost_the_same(const double &a,
 }
 
 bool almost_the_same(const std::complex<double> &a,
-		     const std::complex<double> &b,
+                     const std::complex<double> &b,
                      const double &rel_precision,
-		     const double &num_zero)
+                     const double &num_zero)
 {
-  bool real_part = almost_the_same(a.real(), b.real(), rel_precision,
-		                   num_zero);
-  bool imag_part = almost_the_same(a.imag(), b.imag(), rel_precision,
-		                   num_zero);
+  bool real_part = almost_the_same(a.real(), b.real(), rel_precision, num_zero);
+  bool imag_part = almost_the_same(a.imag(), b.imag(), rel_precision, num_zero);
   return (real_part and imag_part);
 }
 
