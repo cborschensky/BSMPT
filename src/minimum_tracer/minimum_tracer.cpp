@@ -397,6 +397,12 @@ MinimumTracer::TrackPhase(double &globMinEndT,
       {
         // CB: saddle point (i.e. end of phase), move back one step
         //     and reduce step size to approach it more slowly
+
+        if (currentT == initialT) {
+          point = new_point;
+          continue;
+        }
+
         currentT -= dT;
         dT /= 2.;
 
@@ -561,8 +567,6 @@ MinimumTracer::TrackPhase(const std::vector<double> &point_In,
      << " | Starting minimum at = " << point << "\n";
   while ((finalT - currentT) / dT >= 0)
   {
-    // std::cout << "##### CB: currentT=" << currentT << ", dT=" << dT << ", finalT=" << finalT << std::endl;
-    // std::cout << "##### CB: point=" << point << std::endl;
     std::function<double(std::vector<double>)> V = [&](std::vector<double> vev)
     {
       // Potential wrapper
@@ -647,14 +651,11 @@ MinimumTracer::TrackPhase(const std::vector<double> &point_In,
     }
     else
     {
-      std::cout << "##### CB, point=" << point << " , new_point=" << new_point << std::endl;
-      std::cout << "##### CB, SmallestEigenvalue(point)=" << SmallestEigenvalue(point, Hessian) << " , SmallestEigenvalue(new_point)=" << SmallestEigenvalue(new_point, Hessian) << std::endl;
       // It is a nearby stationary point!
       if (SmallestEigenvalue(new_point, Hessian) < 0)
       {
         // // CB: saddle point (i.e. end of phase), move back one step
         // //     and reduce step size to approach it more slowly
-        // std::cout << "##### CB: stationary point: currentT=" << currentT << ", dT=" << dT << std::endl;
         if (currentT == initialT) {
           point = new_point;
           continue;
@@ -662,7 +663,6 @@ MinimumTracer::TrackPhase(const std::vector<double> &point_In,
 
         currentT -= dT;
         dT /= 2.;
-        // std::cout << "##### CB: stationary point after: currentT=" << currentT << ", dT=" << dT << std::endl;
 
         // if (IsInMin == -1)
         // {
@@ -736,7 +736,6 @@ MinimumTracer::TrackPhase(const std::vector<double> &point_In,
       // currentT = finalT;
     else {
       dT = finalT - currentT;
-      // currentT += dT;
       currentT = finalT;
     }
     // CB: ^
