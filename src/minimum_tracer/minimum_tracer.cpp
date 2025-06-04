@@ -2830,7 +2830,7 @@ std::vector<std::string> MinimumTracer::GetLegend(const int &num_coex_phases,
       legend.push_back(this->modelPointer->addLegendVEV().at(j).append(
           "_crit_true_" + std::to_string(i)));
     }
-    legend.push_back("deltaVif_crit_" + std::to_string(i)); // CB added
+    // legend.push_back("deltaVif_crit_" + std::to_string(i)); // CB added
     legend.push_back("status_bounce_sol_" + std::to_string(i));
     legend.push_back("status_nucl_approx_" + std::to_string(i));
     legend.push_back("T_nucl_approx_" + std::to_string(i));
@@ -2844,7 +2844,7 @@ std::vector<std::string> MinimumTracer::GetLegend(const int &num_coex_phases,
       legend.push_back(this->modelPointer->addLegendVEV().at(j).append(
           "_nucl_approx_true_" + std::to_string(i)));
     }
-    legend.push_back("deltaVif_nucl_approx_" + std::to_string(i)); // CB added
+    // legend.push_back("deltaVif_nucl_approx_" + std::to_string(i)); // CB added
     legend.push_back("status_nucl_" + std::to_string(i));
     legend.push_back("T_nucl_" + std::to_string(i));
     for (std::size_t j = 0; j < this->modelPointer->addLegendVEV().size(); j++)
@@ -2857,7 +2857,7 @@ std::vector<std::string> MinimumTracer::GetLegend(const int &num_coex_phases,
       legend.push_back(this->modelPointer->addLegendVEV().at(j).append(
           "_nucl_true_" + std::to_string(i)));
     }
-    legend.push_back("deltaVif_nucl_" + std::to_string(i)); // CB added
+    // legend.push_back("deltaVif_nucl_" + std::to_string(i)); // CB added
     legend.push_back("status_perc_" + std::to_string(i));
     legend.push_back("T_perc_" + std::to_string(i));
     for (std::size_t j = 0; j < this->modelPointer->addLegendVEV().size(); j++)
@@ -2870,7 +2870,7 @@ std::vector<std::string> MinimumTracer::GetLegend(const int &num_coex_phases,
       legend.push_back(this->modelPointer->addLegendVEV().at(j).append(
           "_perc_true_" + std::to_string(i)));
     }
-    legend.push_back("deltaVif_perc_" + std::to_string(i)); // CB added
+    // legend.push_back("deltaVif_perc_" + std::to_string(i)); // CB added
     legend.push_back("status_compl_" + std::to_string(i));
     legend.push_back("T_compl_" + std::to_string(i));
     for (std::size_t j = 0; j < this->modelPointer->addLegendVEV().size(); j++)
@@ -2883,7 +2883,7 @@ std::vector<std::string> MinimumTracer::GetLegend(const int &num_coex_phases,
       legend.push_back(this->modelPointer->addLegendVEV().at(j).append(
           "_compl_true_" + std::to_string(i)));
     }
-    legend.push_back("deltaVif_compl_" + std::to_string(i)); // CB added
+    // legend.push_back("deltaVif_compl_" + std::to_string(i)); // CB added
 
     if (do_gw_calc)
     {
