@@ -284,6 +284,9 @@ class ArgTypeEnum(Enum):
     def __str__(self):
         return self.name
 
+def prepare():
+    setup_cmaes()
+    setup_profiles()
 
 def parse_arguments():
     parser = ArgumentParser()
@@ -333,8 +336,7 @@ def parse_arguments():
 if __name__ == "__main__":
 
     opts = parse_arguments()
-    setup_cmaes()
-    setup_profiles()
+    prepare()
 
     options = []
     if opts.options is not None:
