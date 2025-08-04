@@ -872,7 +872,7 @@ double BounceSolution::CalcTempAtFalseVacFraction(const double &false_vac_frac)
   {
     T_middle    = (T_up + T_down) / 2.;
     double IatT = FalseVacFractionExponent_I(T_middle);
-
+  
     // CB: THIS NEEDS TO BE TESTED PROPERLY, but this way, it should not get stuck
     while (not(std::abs(T_up / T_down - 1) <
                    RelativeTemperatureInCalcTempAtFalseVacFraction or
@@ -882,11 +882,11 @@ double BounceSolution::CalcTempAtFalseVacFraction(const double &false_vac_frac)
     {
       T_middle = (T_up + T_down) / 2.;
       IatT     = FalseVacFractionExponent_I(T_middle);
-
+  
       Logger::Write(LoggingLevel::BounceDetailed,
                     "Pf ( T = " + std::to_string(T_middle) +
                         " ) = " + std::to_string(std::exp(-IatT)));
-
+  
       if (IatT < int_at_false_vac_frac)
       {
         T_up = T_middle;
@@ -895,7 +895,7 @@ double BounceSolution::CalcTempAtFalseVacFraction(const double &false_vac_frac)
       {
         T_down = T_middle;
       }
-
+  
       // Condition for success
       /*if (std::abs(T_up / T_down - 1) <
               RelativeTemperatureInCalcTempAtFalseVacFraction and
@@ -908,9 +908,52 @@ double BounceSolution::CalcTempAtFalseVacFraction(const double &false_vac_frac)
       }*/
       // res_Temp = T_middle;
     }
-
+  
     res_Temp = T_middle;
   }
+  // const double MarginOfCalcTempAtFalseVacFractionBeforeFailure = 1e-4;
+  // if (T_up > 0 and T_down > 0)
+  // {
+  //   T_middle    = (T_up + T_down) / 2.;
+  //   double IatT = FalseVacFractionExponent_I(T_middle);
+  // 
+  //   while ((std::abs(T_up / T_down - 1) >
+  //           RelativeTemperatureInCalcTempAtFalseVacFraction *
+  //               MarginOfCalcTempAtFalseVacFractionBeforeFailure) and
+  //          (not almost_the_same(
+  //              int_at_false_vac_frac,
+  //              IatT,
+  //              RelativeErrorInCalcTempAtFalseVacFraction *
+  //                  MarginOfCalcTempAtFalseVacFractionBeforeFailure)))
+  //   {
+  //     T_middle = (T_up + T_down) / 2.;
+  //     IatT     = FalseVacFractionExponent_I(T_middle);
+  // 
+  //     Logger::Write(LoggingLevel::BounceDetailed,
+  //                   "Pf ( T = " + std::to_string(T_middle) +
+  //                       " ) = " + std::to_string(std::exp(-IatT)));
+  // 
+  //     if (IatT < int_at_false_vac_frac)
+  //     {
+  //       T_up = T_middle;
+  //     }
+  //     else
+  //     {
+  //       T_down = T_middle;
+  //     }
+  // 
+  //     // Condition for success
+  //     if (std::abs(T_up / T_down - 1) <
+  //             RelativeTemperatureInCalcTempAtFalseVacFraction and
+  //         almost_the_same(int_at_false_vac_frac,
+  //                         IatT,
+  //                         RelativeErrorInCalcTempAtFalseVacFraction))
+  //     {
+  //       res_Temp = T_middle;
+  //       break;
+  //     }
+  //   }
+  // }
   // Not numerically stable
   return res_Temp;
 }
