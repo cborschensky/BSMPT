@@ -148,10 +148,16 @@ TransitionTracer::TransitionTracer(user_input &input)
             // Calculate the difference of Veff between the false and the true minimum;
             // in the case of the critical temperature, this should be zero or close to zero
             new_transition_data.crit_deltaVif = false_phase_crit.potential - true_phase_crit.potential;
+            // Calculate (m(T)/T)^2
+            auto [crit_m2T2_scalar, crit_m2T2_gauge] = CheckMassRatio_sep(
+                input, new_transition_data.crit_false_vev, pair.crit_temp);
+            new_transition_data.crit_m2T2_scalar = crit_m2T2_scalar;
+            new_transition_data.crit_m2T2_gauge = crit_m2T2_gauge;
             // CB changes ^
 
-            (void)CheckMassRatio(
-                input, new_transition_data.crit_false_vev, pair.crit_temp);
+            // (void)CheckMassRatio(
+                // input, new_transition_data.crit_false_vev, pair.crit_temp);
+
 
             BounceSolution bounce(input.modelPointer,
                                   mintracer,
@@ -197,11 +203,17 @@ TransitionTracer::TransitionTracer(user_input &input)
                 new_transition_data.nucl_approx_false_vev = false_phase_nucl_approx.point;
                 // Calculate the difference of Veff between the false and the true minimum
                 new_transition_data.nucl_approx_deltaVif = false_phase_nucl_approx.potential - true_phase_nucl_approx.potential;
-                // CB changes ^
-
-                (void)CheckMassRatio(input,
+                // Calculate (m(T)/T)^2
+                auto [nucl_approx_m2T2_scalar, nucl_approx_m2T2_gauge] = CheckMassRatio_sep(input,
                                      new_transition_data.nucl_approx_false_vev,
                                      bounce.GetNucleationTempApprox());
+                new_transition_data.nucl_approx_m2T2_scalar = nucl_approx_m2T2_scalar;
+                new_transition_data.nucl_approx_m2T2_gauge = nucl_approx_m2T2_gauge;
+                // CB changes ^
+
+                // (void)CheckMassRatio(input,
+                //                      new_transition_data.nucl_approx_false_vev,
+                //                      bounce.GetNucleationTempApprox());
               }
               else
               {
@@ -234,11 +246,17 @@ TransitionTracer::TransitionTracer(user_input &input)
                 new_transition_data.nucl_false_vev = false_phase_nucl.point;
                 // Calculate the difference of Veff between the false and the true minimum
                 new_transition_data.nucl_deltaVif = false_phase_nucl.potential - true_phase_nucl.potential;
-                // CB changes ^
-
-               (void)CheckMassRatio(input,
+                // Calculate (m(T)/T)^2
+                auto [nucl_m2T2_scalar, nucl_m2T2_gauge] = CheckMassRatio_sep(input,
                                      new_transition_data.nucl_false_vev,
                                      bounce.GetNucleationTemp());
+                new_transition_data.nucl_m2T2_scalar = nucl_m2T2_scalar;
+                new_transition_data.nucl_m2T2_gauge = nucl_m2T2_gauge;
+                // CB changes ^
+
+               // (void)CheckMassRatio(input,
+               //                       new_transition_data.nucl_false_vev,
+               //                       bounce.GetNucleationTemp());
               }
               else
               {
@@ -271,11 +289,17 @@ TransitionTracer::TransitionTracer(user_input &input)
                 new_transition_data.perc_false_vev = false_phase_perc.point;
                 // Calculate the difference of Veff between the false and the true minimum
                 new_transition_data.perc_deltaVif = false_phase_perc.potential - true_phase_perc.potential;
-                // CB changes ^
-
-                (void)CheckMassRatio(input,
+                // Calculate (m(T)/T)^2
+                auto [perc_m2T2_scalar, perc_m2T2_gauge] = CheckMassRatio_sep(input,
                                      new_transition_data.perc_false_vev,
                                      bounce.GetPercolationTemp());
+                new_transition_data.perc_m2T2_scalar = perc_m2T2_scalar;
+                new_transition_data.perc_m2T2_gauge = perc_m2T2_gauge;
+                // CB changes ^
+
+                // (void)CheckMassRatio(input,
+                //                      new_transition_data.perc_false_vev,
+                //                      bounce.GetPercolationTemp());
               }
               else
               {
@@ -310,11 +334,17 @@ TransitionTracer::TransitionTracer(user_input &input)
                 new_transition_data.compl_false_vev = false_phase_compl.point;
                 // Calculate the difference of Veff between the false and the true minimum
                 new_transition_data.compl_deltaVif = false_phase_compl.potential - true_phase_compl.potential;
-                // CB changes ^
-
-                (void)CheckMassRatio(input,
+                // Calculate (m(T)/T)^2
+                auto [compl_m2T2_scalar, compl_m2T2_gauge] = CheckMassRatio_sep(input,
                                      new_transition_data.compl_false_vev,
                                      bounce.GetCompletionTemp());
+                new_transition_data.compl_m2T2_scalar = compl_m2T2_scalar;
+                new_transition_data.compl_m2T2_gauge = compl_m2T2_gauge;
+                // CB changes ^
+
+                // (void)CheckMassRatio(input,
+                //                      new_transition_data.compl_false_vev,
+                //                      bounce.GetCompletionTemp());
               }
               else
               {
@@ -605,19 +635,29 @@ TransitionTracer::~TransitionTracer()
 {
 }
 
+// CB: changed to output the mass/temp ratio for scalar and gauge bosons separately
 double TransitionTracer::CheckMassRatio(const user_input &input,
                                         const std::vector<double> &vec,
                                         const double &temp) const
 {
+  auto [m2T2_scalar, m2T2_gauge] = CheckMassRatio_sep(input, vec, temp);
+  return std::max(m2T2_scalar, m2T2_gauge);
+}
+
+std::pair<double, double> TransitionTracer::CheckMassRatio_sep(const user_input &input,
+                                        const std::vector<double> &vec,
+                                        const double &temp) const
+{
   std::stringstream ss;
-  std::vector<double> massOverTempSq, massOverTempSqGauge;
-  massOverTempSq = input.modelPointer->HiggsMassesSquared(
+  std::vector<double> massOverTempSq, massOverTempSqScalar, massOverTempSqGauge;
+  massOverTempSqScalar = input.modelPointer->HiggsMassesSquared(
                        input.modelPointer->MinimizeOrderVEV(vec), temp) /
                    std::pow(temp, 2);
   massOverTempSqGauge = input.modelPointer->GaugeMassesSquared(
                             input.modelPointer->MinimizeOrderVEV(vec), temp) /
                         std::pow(temp, 2);
 
+  massOverTempSq = massOverTempSqScalar;
   massOverTempSq.insert(massOverTempSq.end(),
                         massOverTempSqGauge.begin(),
                         massOverTempSqGauge.end());
@@ -653,7 +693,8 @@ double TransitionTracer::CheckMassRatio(const user_input &input,
   }
 
   Logger::Write(LoggingLevel::TransitionDetailed, ss.str());
-  return *std::max_element(massOverTempSq.begin(), massOverTempSq.end());
+  return std::make_pair(*std::max_element(massOverTempSqScalar.begin(), massOverTempSqScalar.end()),
+                        *std::max_element(massOverTempSqGauge.begin(), massOverTempSqGauge.end()));
 }
 
 } // namespace BSMPT
