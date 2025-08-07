@@ -118,6 +118,18 @@ struct transition_data
   std::optional<double> nucl_deltaVif; // CB added
   std::optional<double> perc_deltaVif; // CB added
   std::optional<double> compl_deltaVif; // CB added
+
+  // CB: for (m(T)/T)^2 output in CalcGW and CalcTemps
+  std::optional<double> crit_m2T2_scalar; // CB added
+  std::optional<double> crit_m2T2_gauge; // CB added
+  std::optional<double> nucl_approx_m2T2_scalar; // CB added
+  std::optional<double> nucl_approx_m2T2_gauge; // CB added
+  std::optional<double> nucl_m2T2_scalar; // CB added
+  std::optional<double> nucl_m2T2_gauge; // CB added
+  std::optional<double> perc_m2T2_scalar; // CB added
+  std::optional<double> perc_m2T2_gauge; // CB added
+  std::optional<double> compl_m2T2_scalar; // CB added
+  std::optional<double> compl_m2T2_gauge; // CB added
 };
 
 /**
@@ -217,6 +229,10 @@ public:
    * @return maximal ratio
    */
   double CheckMassRatio(const user_input &input,
+                        const std::vector<double> &vec,
+                        const double &temp) const;
+  // CB: output m(T)^2/T^2 separately for scalar and gauge bosons
+  std::pair<double, double> CheckMassRatio_sep(const user_input &input,
                         const std::vector<double> &vec,
                         const double &temp) const;
 };
