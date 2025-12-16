@@ -9,6 +9,11 @@
 #include <BSMPT/utility/Logger.h>
 #include <BSMPT/utility/utility.h>
 
+// CB: added v
+#include <BSMPT/utility/NumericalDerivatives.h>
+#include <BSMPT/minimum_tracer/minimum_tracer.h>
+// CB: added ^
+
 #include <optional>
 
 namespace BSMPT
@@ -30,6 +35,9 @@ Class_Potential_R2HDM::Class_Potential_R2HDM(const ISMConstants &smConstants)
   NQuarks = 12;
 
   nPar   = 8;
+  nPar   += 1; // CB: add renormalization scale as an input parameter
+  nPar   += 1; // CB: add t parameter as an input parameter
+  nPar   += 1; // CB: add VEV as actual input parameter
   nParCT = 11;
 
   nVEV = 4;
@@ -157,7 +165,10 @@ void Class_Potential_R2HDM::ReadAndSet(const std::string &linestr,
     ss >> tmp;
   }
 
-  for (int k = 1; k <= 8; k++)
+  // for (int k = 1; k <= 8; k++)
+  // for (int k = 1; k <= 9; k++) // CB: add renormalization scale as an input parameter
+  // for (int k = 1; k <= 10; k++) // CB: add renormalization scale as an input parameter and t parameter
+  for (int k = 1; k <= 11; k++) // CB: add renormalization scale as an input parameter and t parameter and VEV
   {
     ss >> tmp;
     if (k == 1)
@@ -176,6 +187,12 @@ void Class_Potential_R2HDM::ReadAndSet(const std::string &linestr,
       RealMMix = tmp;
     else if (k == 8)
       TanBeta = tmp;
+    else if (k == 9) // CB: add renormalization scale as an input parameter
+      par[8] = tmp;
+    else if (k == 10) // CB: add t parameter as an input parameter
+      t_ren_par = tmp;
+    else if (k == 11) // CB: add VEV as actual input parameter
+      par[10] = tmp;
   }
 
   //	double sa = std::sin(alpha);
@@ -217,8 +234,47 @@ void Class_Potential_R2HDM::ReadAndSet(const std::string &linestr,
 void Class_Potential_R2HDM::set_gen(const std::vector<double> &par)
 {
 
+  double VEVin = par[10]; // CB: par[10] is the input VEV
+
+  // CB: recalculate all SM constants, since they are basically all VEV dependent
+  // CB: do I really have to do that? I am not sure if I mess something up... let's assume these here are just all the OS values
+//   SMConstants.C_MassW        = SMConstants.C_MassW*VEVin/SMConstants.C_vev0;
+//   SMConstants.C_MassZ        = SMConstants.C_MassZ*VEVin/SMConstants.C_vev0;
+//   SMConstants.C_MassSMHiggs  = SMConstants.C_MassSMHiggs*VEVin/SMConstants.C_vev0;
+//   SMConstants.C_MassUp       = SMConstants.C_MassUp*VEVin/SMConstants.C_vev0;
+//   SMConstants.C_MassDown     = SMConstants.C_MassDown*VEVin/SMConstants.C_vev0;
+//   SMConstants.C_MassStrange  = SMConstants.C_MassStrange*VEVin/SMConstants.C_vev0;
+//   SMConstants.C_MassTop      = SMConstants.C_MassTop*VEVin/SMConstants.C_vev0;
+//   SMConstants.C_MassCharm    = SMConstants.C_MassCharm*VEVin/SMConstants.C_vev0;
+//   SMConstants.C_MassBottom   = SMConstants.C_MassBottom*VEVin/SMConstants.C_vev0;
+//   SMConstants.C_MassTau      = SMConstants.C_MassTau*VEVin/SMConstants.C_vev0;
+//   SMConstants.C_MassMu       = SMConstants.C_MassMu*VEVin/SMConstants.C_vev0;
+//   SMConstants.C_MassElectron = SMConstants.C_MassElectron*VEVin/SMConstants.C_vev0;
+//   SMConstants.C_GF           = SMConstants.C_GF*SMConstants.C_vev0*SMConstants.C_vev0/VEVin/VEVin;
+// 
+//   
+// 
+//   SMConstants.C_sinsquaredWeinberg =
+//       1 - (SMConstants.C_MassW * SMConstants.C_MassW) / (SMConstants.C_MassZ * SMConstants.C_MassZ);
+//   // SMConstants.C_vev0 = std::sqrt(1 / std::sqrt(2) * 1 / SMConstants.C_GF);
+//   SMConstants.C_vev0 = VEVin;
+//   SMConstants.C_g    = 2 * SMConstants.C_MassW / SMConstants.C_vev0;
+//   SMConstants.C_gs   = 2 * std::sqrt(std::pow(SMConstants.C_MassZ, 2) - std::pow(SMConstants.C_MassW, 2)) /
+//             SMConstants.C_vev0;
+//   SMConstants.C_SMTriHiggs = 3 * SMConstants.C_MassSMHiggs * SMConstants.C_MassSMHiggs / (SMConstants.C_vev0);
+
+  SMConstants.C_vev0 = VEVin;
+
   // double *p = (double *)par;
-  scale = SMConstants.C_vev0;
+
+  // CB: add renormalization scale as an input parameter
+  // scale = SMConstants.C_vev0;
+  // scale = SMConstants.C_vev0*par[8];
+  // scale = VEVin*par[8];
+  scale = 246.21965079413738;
+
+  std::cout << "CB: scale=" << scale << ", par[8]=" << par[8] << ", SMConstants.C_MassSMHiggs=" << SMConstants.C_MassSMHiggs << std::endl;
+
   //	scale=C_MassZ;
   L1               = par[0];
   L2               = par[1];
@@ -297,6 +353,68 @@ void Class_Potential_R2HDM::set_gen(const std::vector<double> &par)
   vevTree.resize(NHiggs);
   vevTree = MinimizeOrderVEV(vevTreeMin);
 }
+
+
+// std::vector<double> Class_Potential_R2HDM::convert_input_parameters() {
+//   std::vector<double> WeinbergHesse;
+//   MatrixXd HesseWeinberg(8, 8);
+// 
+//   double v1 = SMConstants.C_vev0 * C_CosBeta;
+//   double v2 = SMConstants.C_vev0 * C_SinBeta;
+// 
+//   double tempScale = scale;
+//   scale = SMConstants.C_vev0;
+//   WeinbergHesse = WeinbergSecondDerivative();
+//   for (std::size_t i = 0; i < NHiggs; i++) {
+//     for (std::size_t j = 0; j < NHiggs; j++) {
+//       HesseWeinberg(i, j) = WeinbergHesse.at((j)*NHiggs + i);
+//       if (std::abs(HesseWeinberg(i, j)) <= 1e-3) HesseWeinberg(i, j) = 0;
+//     }
+//   }
+// 
+//   double freepar = 0;
+//   double dm12sq_0 = -(-freepar*v1*v2*v2 + HesseWeinberg(0, 0)*v1 - HesseWeinberg(1, 3)*v2 - HesseWeinberg(5, 5)*v1)/v2;
+//   double dL1_0 = (-freepar*v2*v2 + 2*HesseWeinberg(0, 0) - HesseWeinberg(4, 4) - HesseWeinberg(5, 5))/(v1*v1);
+//   double dL2_0 = -(freepar*v1*v1*v2*v2 + HesseWeinberg(6, 6)*v2*v2 - HesseWeinberg(0, 0)*v1*v1 - HesseWeinberg(3, 3)*v2*v2 + v1*v1*HesseWeinberg(5, 5))/(v2*v2*v2*v2);
+//   double dL3_0 = (-freepar*v1*v2*v2 + HesseWeinberg(0, 0)*v1 + HesseWeinberg(1, 3)*v2 - HesseWeinberg(4, 6)*v2 - HesseWeinberg(5, 5)*v1)/(v1*v2*v2);
+//   double dL4_0 = freepar;
+//   double dL5_0 = -(-freepar*v2*v2 + 2*HesseWeinberg(0, 0) - 2*HesseWeinberg(5, 5))/(v2*v2);
+// 
+//   scale = tempScale;
+//   WeinbergHesse = WeinbergSecondDerivative();
+//   for (std::size_t i = 0; i < NHiggs; i++) {
+//     for (std::size_t j = 0; j < NHiggs; j++) {
+//       HesseWeinberg(i, j) = WeinbergHesse.at((j)*NHiggs + i);
+//       if (std::abs(HesseWeinberg(i, j)) <= 1e-3) HesseWeinberg(i, j) = 0;
+//     }
+//   }
+// 
+//   freepar = t_ren_par;
+//   double dm12sq_1 = -(-freepar*v1*v2*v2 + HesseWeinberg(0, 0)*v1 - HesseWeinberg(1, 3)*v2 - HesseWeinberg(5, 5)*v1)/v2;
+//   double dL1_1 = (-freepar*v2*v2 + 2*HesseWeinberg(0, 0) - HesseWeinberg(4, 4) - HesseWeinberg(5, 5))/(v1*v1);
+//   double dL2_1 = -(freepar*v1*v1*v2*v2 + HesseWeinberg(6, 6)*v2*v2 - HesseWeinberg(0, 0)*v1*v1 - HesseWeinberg(3, 3)*v2*v2 + v1*v1*HesseWeinberg(5, 5))/(v2*v2*v2*v2);
+//   double dL3_1 = (-freepar*v1*v2*v2 + HesseWeinberg(0, 0)*v1 + HesseWeinberg(1, 3)*v2 - HesseWeinberg(4, 6)*v2 - HesseWeinberg(5, 5)*v1)/(v1*v2*v2);
+//   double dL4_1 = freepar;
+//   double dL5_1 = -(-freepar*v2*v2 + 2*HesseWeinberg(0, 0) - 2*HesseWeinberg(5, 5))/(v2*v2);
+// 
+//   std::vector<double> parConv(nPar);
+// 
+//   int sign = 1;
+// 
+//   parConv[0] = L1 + sign*(dL1_0 - dL1_1);
+//   parConv[1] = L2 + sign*(dL2_0 - dL2_1);
+//   parConv[2] = L3 + sign*(dL3_0 - dL3_1);
+//   parConv[3] = L4 + sign*(dL4_0 - dL4_1);
+//   parConv[4] = RL5 + sign*(dL5_0 - dL5_1);
+//   parConv[5] = RealMMix + sign*(dm12sq_0 - dm12sq_1);
+//   parConv[6] = TanBeta; // unchanged by input parameter conversion
+//   parConv[7] = Type; // unchanged by input parameter conversion
+//   parConv[8] = scale/SMConstants.C_vev0; // unchanged by input parameter conversion
+//   parConv[9] = t_ren_par; // actually unused
+// 
+//   return parConv;
+// }
+
 
 void Class_Potential_R2HDM::set_CT_Pot_Par(const std::vector<double> &p)
 {
@@ -569,6 +687,56 @@ void Class_Potential_R2HDM::write() const
     }
   }
 
+  // CB: modified v
+  // std::function<double(std::vector<double>)> V0 = std::bind(&BSMPT::Models::Class_Potential_R2HDM::VTree, this, std::placeholders::_1, 0, false);
+  // std::function<double(std::vector<double>)> V10 = std::bind(&BSMPT::Models::Class_Potential_R2HDM::VEff, this, std::placeholders::_1, 0, 0, 0);
+  // std::function<double(std::vector<double>)> V1 = std::bind(&BSMPT::Models::Class_Potential_R2HDM::VEff, this, std::placeholders::_1, 0, 0, 1);
+  // 
+  // double eps = 0.1;
+  // 
+  // std::vector<std::vector<double>> hessenum0 = HessianNumerical(vevTree, V0, eps);
+  // std::vector<std::vector<double>> hessenum10 = HessianNumerical(vevTree, V10, eps);
+  // std::vector<std::vector<double>> hessenum1 = HessianNumerical(vevTree, V1, eps);
+  // 
+  // auto MassMatrix = HiggsMassMatrix(vevTree, 0, 0);
+  // 
+  // std::cout << "HiggsMassMatrix:" << std::endl;
+  // for (std::size_t i = 0; i < NHiggs; ++i) {
+  //   for (std::size_t j = 0; j < NHiggs; ++j) {
+  //     std::cout << MassMatrix(i, j) << " ";
+  //   }
+  //   std::cout << std::endl;
+  // }
+  // std::cout << std::endl;
+  // 
+  // std::cout << "Hesse VTree:" << std::endl;
+  // for (std::size_t i = 0; i < NHiggs; ++i) {
+  //   for (std::size_t j = 0; j < NHiggs; ++j) {
+  //     std::cout << hessenum0[i][j] << " ";
+  //   }
+  //   std::cout << std::endl;
+  // }
+  // std::cout << std::endl;
+  // 
+  // std::cout << "Hesse VEff 0:" << std::endl;
+  // for (std::size_t i = 0; i < NHiggs; ++i) {
+  //   for (std::size_t j = 0; j < NHiggs; ++j) {
+  //     std::cout << hessenum10[i][j] << " ";
+  //   }
+  //   std::cout << std::endl;
+  // }
+  // std::cout << std::endl;
+  // 
+  // std::cout << "Hesse VEff 1:" << std::endl;
+  // for (std::size_t i = 0; i < NHiggs; ++i) {
+  //   for (std::size_t j = 0; j < NHiggs; ++j) {
+  //     std::cout << hessenum1[i][j] << " ";
+  //   }
+  //   std::cout << std::endl;
+  // }
+  // std::cout << std::endl;
+  // CB: modified ^
+
   std::vector<double> HiggsMasses;
   HiggsMasses = HiggsMassesSquared(vevTree, 0);
 
@@ -641,7 +809,11 @@ std::vector<double> Class_Potential_R2HDM::calc_CT() const
     }
   }
 
-  double freepar = 0; // Value of DL4CT
+  // CB: changed v
+  // double freepar = 0; // Value of DL4CT
+  double freepar = t_ren_par; // Value of DL4CT
+  std::cout << "CB: freepar=" << freepar << std::endl;
+  // CB: changed ^
 
   // Du1CT
   parCT.push_back(
@@ -710,6 +882,11 @@ std::vector<double> Class_Potential_R2HDM::calc_CT() const
   // = -HesseWeinberg(0, 2) + HesseWeinberg(1, 3); 	Identities[4] = -1 / v2 *
   //(HesseWeinberg(5, 7) * v1 + HesseWeinberg(7, 7) * v2 - HesseWeinberg(1, 3) *
   // v1 - HesseWeinberg(3, 3) * v2);
+
+  // CB: set all finite counterterms to zero => recover MSbar scheme?
+  for (std::size_t i = 0; i < parCT.size(); ++i) {
+    parCT[i] = 0.;
+  }
 
   return parCT;
 }

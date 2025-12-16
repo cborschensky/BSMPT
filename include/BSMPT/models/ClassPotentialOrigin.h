@@ -55,7 +55,9 @@ public:
   /**
    * @brief SMConstants The SM constants used by the model
    */
-  const ISMConstants SMConstants;
+  // CB: make it not const, so that it is easier to change the VEV
+  // const ISMConstants SMConstants;
+  ISMConstants SMConstants;
 
 protected:
   /**

@@ -100,6 +100,10 @@ public:
   std::vector<std::string> addLegendTripleCouplings() const override;
   std::vector<std::string> addLegendVEV() const override;
 
+  // CB: changed v
+  double t_ren_par = 0.;
+  // CB: changed^
+
   /**
    * Set the numerical values for the Lagrange parameters
    * @param par[0] = lambda_1
