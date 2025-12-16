@@ -142,6 +142,10 @@ double MinimumTracer::SmallestEigenvalue(
     mat.col(i) = Eigen::Map<Eigen::VectorXd>(current_hessian[i].data(), dim);
   }
 
+  // std::cout << "CB: Hessian eigenvalues >>>" << std::endl;
+  // std::cout << mat.eigenvalues() << std::endl;
+  // std::cout << "CB: Hessian eigenvalues <<<" << std::endl;
+
   // Calculate smallest eigenvalue
   double current_min = 1e100;
   for (auto element : mat.eigenvalues())
@@ -1229,7 +1233,10 @@ int MinimumTracer::IsThereEWSymmetryRestoration()
   double OldSmallestEigenvalue       = 1e100;
   double EvenOlderSmallestEigenvalue = 1e200;
   double eps                         = 0.1;
-  double treshold                    = 1e-6;
+  // CB: changed v
+  // double treshold                    = 1e-6;
+  double treshold                    = 1e-4;
+  // CB: changed ^
   double Tmax                        = 1e10;
   std::vector<double> gradient, stationary_point;
   size_t dim = this->modelPointer->get_nVEV();
@@ -1245,8 +1252,14 @@ int MinimumTracer::IsThereEWSymmetryRestoration()
   Logger::Write(LoggingLevel::MinTracerDetailed,
                 "Starting symmetry restoration check");
 
+  // std::cout << "CB: EW symmetry restoration check >>>" << std::endl;
+
   for (double exponentT = 0; exponentT <= log(Tmax);
-       exponentT += log(Tmax) / (20 * log(Tmax)))
+  // CB: changed v
+       // exponentT += log(Tmax) / (20 * log(Tmax)))
+       // exponentT += 0.05)
+       exponentT += 0.01)
+  // CB: changed ^
   {
     T = exp(exponentT);
     // wrappers for potential, first and second numerical derivative
@@ -1255,11 +1268,12 @@ int MinimumTracer::IsThereEWSymmetryRestoration()
       std::vector<double> res = this->modelPointer->MinimizeOrderVEV(vev);
       if (C_UseParwani)
         return this->modelPointer->VEff(res, T) / (1 + T * T * log(T * T));
-      return this->modelPointer->VEff(res, T) / (1 + T * T);
+      return this->modelPointer->VEff(res, T) / (1. + T * T);
     };
     dV      = [=](auto const &arg) { return NablaNumerical(arg, V, eps); };
     Hessian = [=](auto const &arg) { return HessianNumerical(arg, V, eps); };
 
+    // std::cout << "CB: temperature for eigenvalue: T=" << T << " " << exponentT << std::endl;
     ActualSmallestEigenvalue = SmallestEigenvalue(point, Hessian);
 
     if (abs(ActualSmallestEigenvalue / OldSmallestEigenvalue - 1) < treshold and
@@ -1280,6 +1294,10 @@ int MinimumTracer::IsThereEWSymmetryRestoration()
     EvenOlderSmallestEigenvalue = OldSmallestEigenvalue;
     OldSmallestEigenvalue       = ActualSmallestEigenvalue;
   }
+
+  // std::cout << "CB: EW symmetry restoration check <<<" << std::endl;
+  // std::cout << "CB: ActualSmallestEigenvalue=" << ActualSmallestEigenvalue << std::endl;
+  // exit(-1);
 
   if (GradientEigen.size() == 0) return 0; // Convergence was never met
 
