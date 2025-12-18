@@ -1234,8 +1234,11 @@ int MinimumTracer::IsThereEWSymmetryRestoration()
   double EvenOlderSmallestEigenvalue = 1e200;
   double eps                         = 0.1;
   // CB: changed v
-  // double treshold                    = 1e-6;
-  double treshold                    = 1e-4;
+  // CB: Careful, if threshold is chosen too large, it could misidentify the EWSR if there is a sufficiently long intermediate symmetry-restoring phase (is this true? because what is checked is if Veff/T^2 is sufficiently constant, will this change also for an interm. sym. rest. phase?)! So better leave it at 1e-6 for now. This also refers to the stepsize of the temperatures below in the for-loop.
+  double treshold                    = 1e-6;
+  // double treshold                    = 1e-10;
+  // double treshold                    = 0;
+  // double treshold                    = 1e-4;
   // CB: changed ^
   double Tmax                        = 1e10;
   std::vector<double> gradient, stationary_point;
@@ -1249,16 +1252,22 @@ int MinimumTracer::IsThereEWSymmetryRestoration()
   std::function<double(std::vector<double>)> V;
   std::function<std::vector<std::vector<double>>(std::vector<double>)> Hessian;
 
+  std::function<std::vector<double>(std::vector<double>)> dVtest;
+  std::function<double(std::vector<double>)> Vtest;
+  std::function<std::vector<std::vector<double>>(std::vector<double>)> Hessiantest;
+
   Logger::Write(LoggingLevel::MinTracerDetailed,
                 "Starting symmetry restoration check");
 
   // std::cout << "CB: EW symmetry restoration check >>>" << std::endl;
 
-  for (double exponentT = 0; exponentT <= log(Tmax);
   // CB: changed v
+  // CB: start the for-loop at T = 1000, no need to start at T = 1 if we want to probe the high-T limit
+  // for (double exponentT = 0; exponentT <= log(Tmax);
+  for (double exponentT = log(1000); exponentT <= log(Tmax);
        // exponentT += log(Tmax) / (20 * log(Tmax)))
-       // exponentT += 0.05)
-       exponentT += 0.01)
+       exponentT += 0.05)
+       // exponentT += 0.01)
   // CB: changed ^
   {
     T = exp(exponentT);
@@ -1266,15 +1275,39 @@ int MinimumTracer::IsThereEWSymmetryRestoration()
     V = [&](std::vector<double> vev)
     {
       std::vector<double> res = this->modelPointer->MinimizeOrderVEV(vev);
+      // CB: why divide by 1 + T^2? Originally, the minimum of T was anyway 1, so there was never a singularity.
+      // if (C_UseParwani)
+      //   return this->modelPointer->VEff(res, T) / (1 + T * T * log(T * T));
+      // return this->modelPointer->VEff(res, T) / (1. + T * T);
       if (C_UseParwani)
-        return this->modelPointer->VEff(res, T) / (1 + T * T * log(T * T));
-      return this->modelPointer->VEff(res, T) / (1. + T * T);
+        return this->modelPointer->VEff(res, T) / (T * T * log(T * T));
+      return this->modelPointer->VEff(res, T) / (T * T);
     };
     dV      = [=](auto const &arg) { return NablaNumerical(arg, V, eps); };
     Hessian = [=](auto const &arg) { return HessianNumerical(arg, V, eps); };
 
-    // std::cout << "CB: temperature for eigenvalue: T=" << T << " " << exponentT << std::endl;
     ActualSmallestEigenvalue = SmallestEigenvalue(point, Hessian);
+
+    // Vtest = [&](std::vector<double> vev)
+    // {
+    //   const double epss = 0.01;
+    //   // const double epss = 0.1;
+    //   std::vector<double> res = this->modelPointer->MinimizeOrderVEV(vev);
+    //   // double fp = this->modelPointer->VEff(res, epss);
+    //   // double fm = this->modelPointer->VEff(res, -epss);
+    //   double fp = this->modelPointer->V1Loop(res, epss, 0);
+    //   double f0 = this->modelPointer->V1Loop(res, 0, 0);
+    //   double fm = this->modelPointer->V1Loop(res, -epss, 0);
+    //   // std::cout << "fp, fm= " << fp << " " << fm << std::endl;
+    //   return (fp - 2*f0 + fm)/(epss*epss)/2;
+    // };
+    // 
+    // dVtest      = [=](auto const &arg) { return NablaNumerical(arg, Vtest, eps); };
+    // Hessiantest = [=](auto const &arg) { return HessianNumerical(arg, Vtest, eps); };
+    // 
+    // double eigenvaltest = SmallestEigenvalue(point, Hessiantest);
+    // 
+    // std::cout << "CB: temperature for eigenvalue: T, exponentT, eigval= " << T << " " << exponentT << " " << ActualSmallestEigenvalue << " " << eigenvaltest << " " << abs(ActualSmallestEigenvalue / OldSmallestEigenvalue - 1) << " " << abs(ActualSmallestEigenvalue / EvenOlderSmallestEigenvalue - 1) << std::endl;
 
     if (abs(ActualSmallestEigenvalue / OldSmallestEigenvalue - 1) < treshold and
         abs(ActualSmallestEigenvalue / EvenOlderSmallestEigenvalue - 1) <
@@ -1296,7 +1329,7 @@ int MinimumTracer::IsThereEWSymmetryRestoration()
   }
 
   // std::cout << "CB: EW symmetry restoration check <<<" << std::endl;
-  // std::cout << "CB: ActualSmallestEigenvalue=" << ActualSmallestEigenvalue << std::endl;
+  // std::cout << "CB: ActualSmallestEigenvalue= " << ActualSmallestEigenvalue << std::endl;
   // exit(-1);
 
   if (GradientEigen.size() == 0) return 0; // Convergence was never met

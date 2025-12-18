@@ -121,23 +121,70 @@ try
 
       auto start = std::chrono::high_resolution_clock::now();
 
-      user_input input{modelPointer,
-                       args.templow,
-                       args.temphigh,
-                       args.UserDefined_vwall,
-                       args.perc_prbl,
-                       args.compl_prbl,
-                       0.1,
-                       args.MaxPathIntegrations,
-                       args.UseMultiStepPTMode,
-                       args.num_check_pts,
-                       args.CheckEWSymmetryRestoration,
-                       args.CheckNLOStability,
-                       args.WhichMinimizer,
-                       args.UseMultithreading,
-                       false,
-                       TransitionTemperature::Percolation,
-                       1};
+      // CB: v
+      // user_input input{modelPointer,
+      //                  args.templow,
+      //                  args.temphigh,
+      //                  args.UserDefined_vwall,
+      //                  args.perc_prbl,
+      //                  args.compl_prbl,
+      //                  0.1,
+      //                  args.MaxPathIntegrations,
+      //                  args.UseMultiStepPTMode,
+      //                  args.num_check_pts,
+      //                  args.CheckEWSymmetryRestoration,
+      //                  args.CheckNLOStability,
+      //                  args.WhichMinimizer,
+      //                  args.UseMultithreading,
+      //                  false,
+      //                  TransitionTemperature::Percolation,
+      //                  1};
+
+      user_input input;
+
+      // CB: use this, i.e. setting thigh=0, as a mode to just check EWSR and NLO stability without having to run the full thing
+      if (args.temphigh == args.templow) {
+        user_input temp_input{modelPointer,
+                        args.templow,
+                        args.temphigh,
+                        args.UserDefined_vwall,
+                        args.perc_prbl,
+                        args.compl_prbl,
+                        0.1,
+                        0, // args.MaxPathIntegrations
+                        args.UseMultiStepPTMode,
+                        0, // args.num_check_pts
+                        args.CheckEWSymmetryRestoration,
+                        args.CheckNLOStability,
+                        args.WhichMinimizer,
+                        args.UseMultithreading,
+                        false,
+                        TransitionTemperature::Percolation,
+                        1};
+
+        input = temp_input;
+      } else {
+        user_input temp_input{modelPointer,
+                        args.templow,
+                        args.temphigh,
+                        args.UserDefined_vwall,
+                        args.perc_prbl,
+                        args.compl_prbl,
+                        0.1,
+                        args.MaxPathIntegrations,
+                        args.UseMultiStepPTMode,
+                        args.num_check_pts,
+                        args.CheckEWSymmetryRestoration,
+                        args.CheckNLOStability,
+                        args.WhichMinimizer,
+                        args.UseMultithreading,
+                        false,
+                        TransitionTemperature::Percolation,
+                        1};
+
+        input = temp_input;
+      }
+      // CB: ^
 
       TransitionTracer trans(input);
 
@@ -330,7 +377,10 @@ bool CLIOptions::good() const
     Logger::Write(LoggingLevel::Default, "lastline is smaller then firstline.");
     return false;
   }
-  if (templow >= temphigh)
+  // CB: v
+  // if (templow >= temphigh)
+  if (templow > temphigh)
+  // CB: ^
   {
     Logger::Write(LoggingLevel::Default,
                   "Invalid temperature choice. Thigh has to be > 0 GeV.");
