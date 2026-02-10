@@ -68,7 +68,7 @@ class BSMPT(ConanFile):
 
         if self.options.UseLibCMAES:
             self.requires(
-                "cmaes/0.10.0@bsmpt/local",
+                "cmaes/0.10.2",
                 transitive_headers=True,
                 transitive_libs=True,
             )
@@ -244,7 +244,7 @@ class BSMPT(ConanFile):
             "gsl::gsl",
             # "Threads::Threads",
             "Utility",
-            # "Models",
+            "Models",
         ]
         self.cpp_info.components["Minimizer"].set_property(
             "cmake_target_name", "BSMPT::Minimizer"
@@ -272,7 +272,6 @@ class BSMPT(ConanFile):
         self.cpp_info.components["Models"].requires = [
             "gsl::gsl",
             "eigen::eigen",
-            "Minimizer",
             "ThermalFunctions",
             "Utility",
         ]
