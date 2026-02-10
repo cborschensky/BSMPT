@@ -237,7 +237,7 @@ void Class_Potential_R2HDM::set_gen(const std::vector<double> &par)
   double VEVin = par[10]; // CB: par[10] is the input VEV
 
   // CB: recalculate all SM constants, since they are basically all VEV dependent
-  // CB: do I really have to do that? I am not sure if I mess something up... let's assume these here are just all the OS values
+  // CB: do I really have to do that? I am not sure if I mess something up... let's assume these here are just all the OS values; just change the VEV, since this is used in multiple places
 //   SMConstants.C_MassW        = SMConstants.C_MassW*VEVin/SMConstants.C_vev0;
 //   SMConstants.C_MassZ        = SMConstants.C_MassZ*VEVin/SMConstants.C_vev0;
 //   SMConstants.C_MassSMHiggs  = SMConstants.C_MassSMHiggs*VEVin/SMConstants.C_vev0;
@@ -263,15 +263,20 @@ void Class_Potential_R2HDM::set_gen(const std::vector<double> &par)
 //             SMConstants.C_vev0;
 //   SMConstants.C_SMTriHiggs = 3 * SMConstants.C_MassSMHiggs * SMConstants.C_MassSMHiggs / (SMConstants.C_vev0);
 
-  SMConstants.C_vev0 = VEVin;
-
   // double *p = (double *)par;
 
+  // SMConstants.C_vev0 = 246.21965079413738;
+  SMConstants.C_vev0 = std::sqrt(1 / std::sqrt(2) * 1 / SMConstants.C_GF);
+
   // CB: add renormalization scale as an input parameter
+  // CB: at this point, C_vev0 is still the "OS" SM value
   // scale = SMConstants.C_vev0;
-  // scale = SMConstants.C_vev0*par[8];
+  scale = SMConstants.C_vev0*par[8];
   // scale = VEVin*par[8];
-  scale = 246.21965079413738;
+  // scale = 246.21965079413738;
+
+  // CB: moved this to further down
+  // SMConstants.C_vev0 = VEVin;
 
   std::cout << "CB: scale=" << scale << ", par[8]=" << par[8] << ", SMConstants.C_MassSMHiggs=" << SMConstants.C_MassSMHiggs << std::endl;
 
@@ -294,23 +299,6 @@ void Class_Potential_R2HDM::set_gen(const std::vector<double> &par)
   {
     C_SinBeta *= -1;
   }
-
-  u1 = RealMMix * TanBeta -
-       SMConstants.C_vev0 * SMConstants.C_vev0 * C_SinBetaSquared *
-           (L4 + RL5 + L3) / 0.2e1 -
-       SMConstants.C_vev0 * SMConstants.C_vev0 * C_CosBetaSquared * L1 / 0.2e1;
-  u2 = RealMMix * 1.0 / TanBeta -
-       SMConstants.C_vev0 * SMConstants.C_vev0 * C_CosBetaSquared *
-           (L4 + RL5 + L3) / 0.2e1 -
-       SMConstants.C_vev0 * SMConstants.C_vev0 * C_SinBetaSquared * L2 / 0.2e1;
-
-  //	double ML5 =
-  // 2*RealMMix/(SMConstants.C_vev0*SMConstants.C_vev0*C_SinBeta*C_CosBeta);
-  //	double TripleHiggs =
-  //-3.0/(SMConstants.C_vev0*std::sin(2*beta))*(Mh*Mh*(2*std::cos(alpha+beta)+std::sin(2*alpha)*std::sin(beta-alpha))
-  //-
-  // std::cos(alpha+beta)*std::pow(std::cos(beta-alpha),2)*SMConstants.C_vev0*SMConstants.C_vev0*ML5
-  //);
 
   double cb = 0;
 
@@ -344,6 +332,26 @@ void Class_Potential_R2HDM::set_gen(const std::vector<double> &par)
   {
     CTempC1 += 12.0 / 48.0 * cb * cb;
   }
+
+  // CB: reordered a bit so that the MSbar VEV is used only starting from here, but not in any of the quantities related to the Yukawa or gauge sectors
+  SMConstants.C_vev0 = VEVin;
+
+  u1 = RealMMix * TanBeta -
+       SMConstants.C_vev0 * SMConstants.C_vev0 * C_SinBetaSquared *
+           (L4 + RL5 + L3) / 0.2e1 -
+       SMConstants.C_vev0 * SMConstants.C_vev0 * C_CosBetaSquared * L1 / 0.2e1;
+  u2 = RealMMix * 1.0 / TanBeta -
+       SMConstants.C_vev0 * SMConstants.C_vev0 * C_CosBetaSquared *
+           (L4 + RL5 + L3) / 0.2e1 -
+       SMConstants.C_vev0 * SMConstants.C_vev0 * C_SinBetaSquared * L2 / 0.2e1;
+
+  //	double ML5 =
+  // 2*RealMMix/(SMConstants.C_vev0*SMConstants.C_vev0*C_SinBeta*C_CosBeta);
+  //	double TripleHiggs =
+  //-3.0/(SMConstants.C_vev0*std::sin(2*beta))*(Mh*Mh*(2*std::cos(alpha+beta)+std::sin(2*alpha)*std::sin(beta-alpha))
+  //-
+  // std::cos(alpha+beta)*std::pow(std::cos(beta-alpha),2)*SMConstants.C_vev0*SMConstants.C_vev0*ML5
+  //);
 
   vevTreeMin.resize(nVEV);
   vevTreeMin[0] = 0;
@@ -883,10 +891,10 @@ std::vector<double> Class_Potential_R2HDM::calc_CT() const
   //(HesseWeinberg(5, 7) * v1 + HesseWeinberg(7, 7) * v2 - HesseWeinberg(1, 3) *
   // v1 - HesseWeinberg(3, 3) * v2);
 
-  // CB: set all finite counterterms to zero => recover MSbar scheme?
-  for (std::size_t i = 0; i < parCT.size(); ++i) {
-    parCT[i] = 0.;
-  }
+  // // CB: set all finite counterterms to zero => recover MSbar scheme?
+  // for (std::size_t i = 0; i < parCT.size(); ++i) {
+  //   parCT[i] = 0.;
+  // }
 
   return parCT;
 }

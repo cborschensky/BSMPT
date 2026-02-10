@@ -103,7 +103,7 @@ try
       modelPointer->write();
 
       // CB: v
-      double eps = 0.1;
+      double eps = 0.01;
       std::vector<double> vevTree = modelPointer->MinimizeOrderVEV(modelPointer->get_vevTreeMin());
 
       // auto VTree0 = [&](std::vector<double> x) {
@@ -145,6 +145,7 @@ try
       }
       std::cout << std::endl;
 
+/*
       std::cout << "Hesse VTree:" << std::endl;
       for (std::size_t i = 0; i < NHiggs; ++i) {
         for (std::size_t j = 0; j < NHiggs; ++j) {
@@ -171,24 +172,40 @@ try
         std::cout << std::endl;
       }
       std::cout << std::endl;
+*/
 
-      for (std::size_t i = 0; i < NHiggs; ++i) {
-        for (std::size_t j = 0; j < NHiggs; ++j) {
-          MassMatrix(i, j) = hessenum1[i][j];
-        }
-      }
+      // for (std::size_t i = 0; i < NHiggs; ++i) {
+      //   for (std::size_t j = 0; j < NHiggs; ++j) {
+      //     MassMatrix(i, j) = hessenum1[i][j];
+      //   }
+      // }
 
       SelfAdjointEigenSolver<MatrixXd> es(MassMatrix, EigenvaluesOnly);
       auto EV = es.eigenvalues();
-      for (std::size_t i = 0; i < NHiggs; ++i)
-        EV[i] = std::sqrt(EV[i]);
+      for (std::size_t i = 0; i < NHiggs; ++i) {
+        if (EV[i] < 0) {
+          EV[i] = EV[i]/std::abs(EV[i])*std::sqrt(std::abs(EV[i]));
+        } else {
+          EV[i] = std::sqrt(EV[i]);
+        }
+      }
 
       std::cout << "EV=" << EV << std::endl;
 
+      // Test at tree-level
+      modelPointer->SetUseTreeLevel(true);
       std::shared_ptr<MinimumTracer> mintracer(new MinimumTracer(modelPointer, 1 + 2 + 4, true));
+      auto glob_min_0 = mintracer->ConvertToVEVDim(mintracer->GetGlobalMinimum(0));
+
+      // Test at 1-loop effective
+      modelPointer->SetUseTreeLevel(false);
+      mintracer.reset(new MinimumTracer(modelPointer, 1 + 2 + 4, true));
       auto glob_min = mintracer->ConvertToVEVDim(mintracer->GetGlobalMinimum(0));
 
-      std::cout << "glob_min=" << glob_min << std::endl;
+      std::cout << "glob_min_0(tree-level)=" << glob_min_0 << std::endl;
+      std::cout << std::sqrt(glob_min_0[0]*glob_min_0[0] + glob_min_0[1]*glob_min_0[1] + glob_min_0[2]*glob_min_0[2] + glob_min_0[3]*glob_min_0[3]) << std::endl;
+
+      std::cout << "glob_min(1-loop)=" << glob_min << std::endl;
       std::cout << std::sqrt(glob_min[0]*glob_min[0] + glob_min[1]*glob_min[1] + glob_min[2]*glob_min[2] + glob_min[3]*glob_min[3]) << std::endl;
 
       std::vector<double> vevGlob = modelPointer->MinimizeOrderVEV(glob_min);
@@ -200,16 +217,32 @@ try
         }
       }
 
+      // std::cout << "hessenum1Glob:" << std::endl;
+      // for (std::size_t i = 0; i < NHiggs; ++i) {
+      //   for (std::size_t j = 0; j < NHiggs; ++j) {
+      //     std::cout << MassMatrix(i, j) << " ";
+      //   }
+      //   std::cout << std::endl;
+      // }
+      // std::cout << std::endl;
+
+      std::cout << std::endl;
+
       SelfAdjointEigenSolver<MatrixXd> esGlob(MassMatrix, EigenvaluesOnly);
       EV = esGlob.eigenvalues();
-      for (std::size_t i = 0; i < NHiggs; ++i)
-        EV[i] = std::sqrt(EV[i]);
+      for (std::size_t i = 0; i < NHiggs; ++i) {
+        if (EV[i] < 0) {
+          EV[i] = EV[i]/std::abs(EV[i])*std::sqrt(std::abs(EV[i]));
+        } else {
+          EV[i] = std::sqrt(EV[i]);
+        }
+      }
 
       std::cout << "EV=" << EV << std::endl;
 
       int ewsr_status = mintracer->IsThereEWSymmetryRestoration();
       auto status_ewsr = mintracer->GetStatusEWSR(ewsr_status);
-      std::cout << "EWSR status=" << ewsr_status << std::endl;
+      std::cout << "EWSR status=" << ewsr_status << ", " << status_ewsr << std::endl;
       // ewsr_status:
       //   3: EWSR
       //   2: no EWSR (i.e. potential is BFB, but minimum is not at the origin, or what does this mean?)
