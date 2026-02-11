@@ -2328,46 +2328,10 @@ std::vector<double> Class_Potential_C2HDM::calc_CT() const
   return parCT;
 }
 
-/**
- * Ensures the correct rotation matrix convention
- */
-void Class_Potential_C2HDM::AdjustRotationMatrix()
+void Class_Potential_C2HDM::FindMassBasisIndices(
+     const std::vector<double> &HiggsMasses,
+     const MatrixXd &HiggsRot)
 {
-  const double ZeroThreshold = 1e-5;
-
-  if (!SetCurvatureDone) SetCurvatureArrays();
-  if (!CalcCouplingsDone) CalculatePhysicalCouplings();
-
-  if (!CheckRotationMatrix()) // Check whether generically generated rotation
-                              // matrix is proper rotation matrix
-  {
-    throw std::runtime_error("Error in rotation matrix.");
-  }
-
-  MatrixXd HiggsRot(NHiggs, NHiggs);
-  for (std::size_t i = 0; i < NHiggs; i++)
-  {
-    for (std::size_t j = 0; j < NHiggs; j++)
-    {
-      HiggsRot(i, j) = HiggsRotationMatrix[i][j];
-    }
-  }
-
-  std::vector<double> HiggsMasses = HiggsMassesSquared(vevTree, 0);
-  if (HiggsMasses.front() <= -ZeroThreshold)
-  {
-    std::stringstream ss;
-    ss.precision(std::numeric_limits<double>::max_digits10);
-    ss << "Warning, at least one negative mass squared in spectrum: "
-       << HiggsMasses.front() << std::endl;
-    Logger::Write(LoggingLevel::Default, ss.str());
-  }
-
-  // C2HDM interaction basis
-  // rho1, eta1, rho2, eta2, zeta1, psi1, zeta2, psi2
-  const std::size_t pos_rho1 = 0, pos_eta1 = 1, pos_rho2 = 2, pos_eta2 = 3,
-                    pos_zeta1 = 4, pos_psi1 = 5, pos_zeta2 = 6, pos_psi2 = 7;
-
   // Indices of mass eigenstates for rotation from interaction to mass basis.
   // Using temporary optional variables, later being set to the instance variables
   // pos_G0, pos_Gp, etc.
@@ -2378,16 +2342,16 @@ void Class_Potential_C2HDM::AdjustRotationMatrix()
   // mass base index i corresponds to mass vector sorted in ascending mass
   {
     // Goldstones have zero mass in the Landau gauge
-    bool hasZeroMass = std::abs(HiggsMasses[i]) < ZeroThreshold;
+    bool hasZeroMass = std::abs(HiggsMasses[i]) < ARMZeroThreshold;
     bool hasPosPsi12  = std::abs(HiggsRot(i, pos_psi1))
-                        + std::abs(HiggsRot(i, pos_psi2)) > ZeroThreshold;
+                        + std::abs(HiggsRot(i, pos_psi2)) > ARMZeroThreshold;
     bool hasPosZeta12 = std::abs(HiggsRot(i, pos_zeta1))
-                        + std::abs(HiggsRot(i, pos_zeta2)) > ZeroThreshold;
+                        + std::abs(HiggsRot(i, pos_zeta2)) > ARMZeroThreshold;
     // Charged submatrix.
     // Make use of the fact that there is no mixing between the rho1,2 and
     // the eta1,2 states, otherwise this part with if/else if would not work
     if (std::abs(HiggsRot(i, pos_rho1)) + std::abs(HiggsRot(i, pos_rho2)) >
-        ZeroThreshold)
+        ARMZeroThreshold)
     {
       if (not tpos_Gp.has_value() and hasZeroMass)
       {
@@ -2404,7 +2368,7 @@ void Class_Potential_C2HDM::AdjustRotationMatrix()
       }
     }
     else if (std::abs(HiggsRot(i, pos_eta1)) + std::abs(HiggsRot(i, pos_eta2)) >
-             ZeroThreshold)
+             ARMZeroThreshold)
     {
       if (not tpos_Gm.has_value() and hasZeroMass)
       {
@@ -2495,7 +2459,7 @@ void Class_Potential_C2HDM::AdjustRotationMatrix()
         zero_element = true;
       }
 
-      if (zero_element and std::abs(HiggsRot(i, j)) > ZeroThreshold)
+      if (zero_element and std::abs(HiggsRot(i, j)) > ARMZeroThreshold)
       {
         throw std::runtime_error("Error. Invalid rotation matrix detected.");
       }
@@ -2531,109 +2495,33 @@ void Class_Potential_C2HDM::AdjustRotationMatrix()
     pos_h_H  = pos_h2;
     pos_h_SM = pos_h3;
   }
+}
 
-  // Steps:
-  // (1) Rotate mass matrix from interaction to semi-interaction basis
-  //     (i.e. interaction basis with neutral Goldstone rotated out):
-  //
-  //     From interaction basis
-  //       0     1     2     3     4      5      6      7
-  //       rho1, eta1, rho2, eta2, zeta1, psi1,  zeta2, psi2
-  //     to semi-interaction basis (Goldstone rotated out)
-  //       0     1     2     3     4      5      6      7
-  //       G^0,  rho1, eta1, rho2, eta2,  zeta1, zeta2, zeta3
-  //
-  // (2) Diagonalise mass matrix in semi-interaction basis
-  //     -> obtain rotation matrix from semi-interaction to mass basis
-  //
-  // (3) Neutral part of rotation matrix from step 2 must have the 3x3 form
-  //     as in arXiv:1803.02846 Eq. (3.91), so this is the one to check for
-  //     R11 > 0, R33 > 0, det > 0 (see arXiv:2007.02985 Eq. (6))
-
-  // Find position of neutral Goldstone:
-  // * Mass eigenvalues are ordered from smallest to largest
-  //   => First three rows correspond to Goldstones
-  //      (= massless in Landau gauge)
-  // * Charged and neutral Goldstones do not mix
-  //   => Look for row which has psi1 and psi2 mixing components =/= 0,
-  //      and the rest = 0
-
-  // Matrix to "rotate out" the neutral Goldstone boson, see arXiv:1803.02846
-  // Eq. (3.89)
-  MatrixXd RotGoldstone(NHiggs, NHiggs);
-  RotGoldstone.row(0) << 0., 0., 0., 0., 0., C_CosBeta, 0., C_SinBeta;
-  RotGoldstone.row(1) << 1., 0., 0., 0., 0., 0., 0., 0.;
-  RotGoldstone.row(2) << 0., 1., 0., 0., 0., 0., 0., 0.;
-  RotGoldstone.row(3) << 0., 0., 1., 0., 0., 0., 0., 0.;
-  RotGoldstone.row(4) << 0., 0., 0., 1., 0., 0., 0., 0.;
-  RotGoldstone.row(5) << 0., 0., 0., 0., 1., 0., 0., 0.;
-  RotGoldstone.row(6) << 0., 0., 0., 0., 0., 0., 1., 0.;
-  RotGoldstone.row(7) << 0., 0., 0., 0., 0., -C_SinBeta, 0., C_CosBeta;
-
-  // Swap rows to ensure that G0 is always in the first row
-  // for the following manipulations
-  MatrixXd MoveGoldstoneFirst(NHiggs, NHiggs);
-  MoveGoldstoneFirst.setIdentity(NHiggs, NHiggs);
-  if (pos_G0 != 0)
-  {
-    MoveGoldstoneFirst(0, 0)           = 0.;
-    MoveGoldstoneFirst(pos_G0, pos_G0) = 0.;
-    MoveGoldstoneFirst(0, pos_G0)      = 1.;
-    MoveGoldstoneFirst(pos_G0, 0)      = 1.;
-  }
-
-  // Compute rotation matrix from the "semi-interaction" (with G0 rotated out)
-  // to the mass basis, to get the same rotation as in arXiv:1803.02846 Eqs.
-  // (3.90)-(3.91)
-  MatrixXd RotGoldstoneMassBasis(NHiggs, NHiggs);
-  RotGoldstoneMassBasis =
-      MoveGoldstoneFirst * HiggsRot * RotGoldstone.transpose();
-
-  // Semi-interaction basis (neutral Goldstone rotated out)
-  // G^0 == 0 (not used), rho1, eta1, rho2, eta2, zeta1, zeta2, zeta3
-  const std::size_t pos_si_G0 = 0, pos_si_rho1 = 1, pos_si_eta1 = 2,
-                    pos_si_rho2 = 3, pos_si_eta2 = 4, pos_si_zeta1 = 5,
-                    pos_si_zeta2 = 6, pos_si_zeta3 = 7;
-
-  double row1 = 0.0, col1 = 0.0;
-  // Sum only over index starting from 1 (i.e. don't include the (0,0) element,
-  // i.e. the upper left element, of the matrix); the sum should be very small
-  for (std::size_t i = 1; i < NHiggs; i++)
-  {
-    row1 += std::abs(RotGoldstoneMassBasis(0, i));
-    col1 += std::abs(RotGoldstoneMassBasis(i, 0));
-  }
-
-  // Consistency check that the Goldstone was rotated out properly:
-  // first row/column should contain only zeroes except for the upper left
-  // element
-  if (std::abs(std::abs(RotGoldstoneMassBasis(0, 0)) - 1.0) > ZeroThreshold or
-      std::abs(row1) > ZeroThreshold or std::abs(col1) > ZeroThreshold)
-  {
-    throw std::runtime_error("Error. Something went wrong after rotating "
-                             "out the neutral Goldstone.");
-  }
-
+std::tuple<std::size_t, std::size_t, std::size_t, std::size_t,
+           std::size_t, std::size_t, std::size_t> Class_Potential_C2HDM
+           ::FindSemiMassBasisIndices(const std::vector<double> &HiggsMasses,
+                                      const MatrixXd &HiggsRot)
+{
   // Indices of mass eigenstates for rotation from semi-interaction to mass
   // basis; position of neutral Goldstone is fixed to 0, see above
-  // int pos_si_G1 = -1, pos_si_G2 = -1, pos_si_H1 = -1, pos_si_H2 = -1;
-  // int pos_si_h1 = -1, pos_si_h2 = -1, pos_si_h3 = -1;
-
   std::optional<std::size_t> tpos_si_Gp, tpos_si_Gm, tpos_si_Hp, tpos_si_Hm,
                              tpos_si_h1, tpos_si_h2, tpos_si_h3;
 
-  // Start with i = 1, i.e. skip over the neutral Goldstone
-  for (std::size_t i = 1; i < NHiggs; i++)
+  // Skip over the neutral Goldstone
+  for (std::size_t i = 0; i < NHiggs; i++)
   // mass base index i corresponds to mass vector sorted in ascending mass
   {
-    bool hasZeroMass = std::abs(HiggsMasses[i]) < ZeroThreshold;
+    if (i == pos_G0)
+      continue;
+
+    bool hasZeroMass = std::abs(HiggsMasses[i]) < ARMZeroThreshold;
     // Charged submatrices
     // Check if the field with index i has a rho1 or rho2 component;
     // since Goldstone mass is zero (Landau gauge), it appears before the
     // charged Higgs
-    if (std::abs(RotGoldstoneMassBasis(i, pos_si_rho1)) +
-            std::abs(RotGoldstoneMassBasis(i, pos_si_rho2)) >
-        ZeroThreshold)
+    if (std::abs(HiggsRot(i, pos_si_rho1)) +
+        std::abs(HiggsRot(i, pos_si_rho2)) >
+        ARMZeroThreshold)
     // use that 0 = mGpm < mHpm
     {
       if (not tpos_si_Gp.has_value() and hasZeroMass)
@@ -2650,9 +2538,9 @@ void Class_Potential_C2HDM::AdjustRotationMatrix()
                                  "with other components.");
       }
     }
-    else if (std::abs(RotGoldstoneMassBasis(i, pos_si_eta1)) +
-                 std::abs(RotGoldstoneMassBasis(i, pos_si_eta2)) >
-             ZeroThreshold)
+    else if (std::abs(HiggsRot(i, pos_si_eta1)) +
+             std::abs(HiggsRot(i, pos_si_eta2)) >
+             ARMZeroThreshold)
     // use that 0 = mGpm < mHpm
     {
       if (not tpos_si_Gm.has_value() and hasZeroMass)
@@ -2671,10 +2559,10 @@ void Class_Potential_C2HDM::AdjustRotationMatrix()
     }
     // Neutral submatrix (mixed CP-even and CP-odd states);
     // neutral Goldstone already rotated out
-    else if (std::abs(RotGoldstoneMassBasis(i, pos_si_zeta1)) +
-                 std::abs(RotGoldstoneMassBasis(i, pos_si_zeta2)) +
-                 std::abs(RotGoldstoneMassBasis(i, pos_si_zeta3)) >
-             ZeroThreshold)
+    else if (std::abs(HiggsRot(i, pos_si_zeta1)) +
+             std::abs(HiggsRot(i, pos_si_zeta2)) +
+             std::abs(HiggsRot(i, pos_si_zeta3)) >
+             ARMZeroThreshold)
     // use that mh1 < mh2 < mh3
     {
       if (not tpos_si_h1.has_value())
@@ -2721,12 +2609,18 @@ void Class_Potential_C2HDM::AdjustRotationMatrix()
   std::size_t pos_si_h3 = tpos_si_h3.value();
 
   // Check if all other elements of rotation matrix are zero
-  zero_element = false;
-  // Start with i, j = 1, skip neutral Goldstone
-  for (std::size_t i = 1; i < NHiggs; i++)
+  bool zero_element = false;
+  // Skip neutral Goldstone
+  for (std::size_t i = 0; i < NHiggs; i++)
   {
-    for (std::size_t j = 1; j < NHiggs; j++)
+    if (i == pos_G0)
+      continue;
+
+    for (std::size_t j = 0; j < NHiggs; j++)
     {
+      if (i == pos_G0)
+        continue;
+
       if (not((j == pos_si_rho1 and (i == pos_si_Gp or i == pos_si_Hp)) or
               (j == pos_si_eta1 and (i == pos_si_Gm or i == pos_si_Hm)) or
               (j == pos_si_rho2 and (i == pos_si_Gp or i == pos_si_Hp)) or
@@ -2742,7 +2636,7 @@ void Class_Potential_C2HDM::AdjustRotationMatrix()
       }
 
       if (zero_element and
-          std::abs(RotGoldstoneMassBasis(i, j)) > ZeroThreshold)
+          std::abs(HiggsRot(i, j)) > ARMZeroThreshold)
       {
         throw std::runtime_error("Error. Invalid rotation matrix detected.");
       }
@@ -2750,107 +2644,211 @@ void Class_Potential_C2HDM::AdjustRotationMatrix()
     }
   }
 
-  MatrixXd HiggsRotFixed(NHiggs, NHiggs);
+  return {pos_si_Gp, pos_si_Gm, pos_si_Hp, pos_si_Hm, pos_si_h1, pos_si_h2,
+          pos_si_h3};
+}
+
+void Class_Potential_C2HDM::AdjustRotationMatrix()
+{
+  if (!SetCurvatureDone) SetCurvatureArrays();
+  if (!CalcCouplingsDone) CalculatePhysicalCouplings();
+
+  if (!CheckRotationMatrix()) // Check whether generically generated rotation
+                              // matrix is proper rotation matrix
+  {
+    throw std::runtime_error("Error in rotation matrix.");
+  }
+
+  MatrixXd HiggsRot(NHiggs, NHiggs);
   for (std::size_t i = 0; i < NHiggs; i++)
   {
-    HiggsRotFixed.row(i) = RotGoldstoneMassBasis.row(i);
+    for (std::size_t j = 0; j < NHiggs; j++)
+    {
+      HiggsRot(i, j) = HiggsRotationMatrix[i][j];
+    }
   }
 
-  // Neutral Goldstone; flip sign if its element, which should be "1", is
-  // negative
-  if (HiggsRotFixed(pos_si_G0, pos_si_G0) < 0) // G0 G0 (+1)
+  std::vector<double> HiggsMasses = HiggsMassesSquared(vevTree, 0);
+  if (HiggsMasses.front() <= -ARMZeroThreshold)
   {
-    HiggsRotFixed.row(pos_si_G0) *= -1;
+    std::stringstream ss;
+    ss.precision(std::numeric_limits<double>::max_digits10);
+    ss << "Warning, at least one negative mass squared in spectrum: "
+       << HiggsMasses.front() << std::endl;
+    Logger::Write(LoggingLevel::Default, ss.str());
   }
 
-  // charged submatrix
-  if (HiggsRotFixed(pos_si_Gp, pos_si_rho1) < 0) // Gp rho1 (+ cos(beta))
+  FindMassBasisIndices(HiggsMasses, HiggsRot);
+
+  /*
+   * Steps:
+   * (1) Rotate mass matrix from interaction to semi-interaction basis
+   *     (i.e. interaction basis with neutral Goldstone rotated out):
+   *
+   *     From interaction basis
+   *       0     1     2     3     4      5      6      7
+   *       rho1, eta1, rho2, eta2, zeta1, psi1,  zeta2, psi2
+   *     to semi-interaction basis (Goldstone rotated out)
+   *       0     1     2     3     4      5      6      7
+   *       G^0,  rho1, eta1, rho2, eta2,  zeta1, zeta2, zeta3
+   *
+   * (2) Diagonalise mass matrix in semi-interaction basis
+   *     -> obtain rotation matrix from semi-interaction to mass basis
+   *
+   * (3) Neutral part of rotation matrix from step 2 must have the 3x3 form
+   *     as in arXiv:1803.02846 Eq. (3.91), so this is the one to check for
+   *     R11 > 0, R33 > 0, det > 0 (see arXiv:2007.02985 Eq. (6))
+   */
+
+  /*
+   * Find position of neutral Goldstone:
+   * * Mass eigenvalues are ordered from smallest to largest
+   *   => First three rows correspond to Goldstones
+   *      (= massless in Landau gauge)
+   * * Charged and neutral Goldstones do not mix
+   *   => Look for row which has psi1 and psi2 mixing components =/= 0,
+   *      and the rest = 0
+   */
+
+  // Matrix to "rotate out" the neutral Goldstone boson, see arXiv:1803.02846
+  // Eq. (3.89)
+  // G0 will then be in the "pos_si_G0"th row (by default the first row)
+  MatrixXd RotG0(NHiggs, NHiggs);
+  RotG0.row(pos_si_G0)    << 0., 0., 0., 0., 0.,  C_CosBeta, 0., C_SinBeta;
+  RotG0.row(pos_si_rho1)  << 1., 0., 0., 0., 0.,         0., 0.,        0.;
+  RotG0.row(pos_si_eta1)  << 0., 1., 0., 0., 0.,         0., 0.,        0.;
+  RotG0.row(pos_si_rho2)  << 0., 0., 1., 0., 0.,         0., 0.,        0.;
+  RotG0.row(pos_si_eta2)  << 0., 0., 0., 1., 0.,         0., 0.,        0.;
+  RotG0.row(pos_si_zeta1) << 0., 0., 0., 0., 1.,         0., 0.,        0.;
+  RotG0.row(pos_si_zeta2) << 0., 0., 0., 0., 0.,         0., 1.,        0.;
+  RotG0.row(pos_si_zeta3) << 0., 0., 0., 0., 0., -C_SinBeta, 0., C_CosBeta;
+
+  // Compute rotation matrix from the "semi-interaction" (with G0 rotated out)
+  // to the mass basis, to get the same rotation as in arXiv:1803.02846 Eqs.
+  // (3.90)-(3.91)
+  MatrixXd RotG0MassBasis(NHiggs, NHiggs);
+  RotG0MassBasis = HiggsRot * RotG0.transpose();
+
+  double row1 = 0.0, col1 = 0.0;
+  // Sum only over index excluding pos_(si)_G0; the sum should be very small/numerically zero
+  for (std::size_t i = 0; i < NHiggs; i++)
   {
-    HiggsRotFixed.row(pos_si_Gp) *= -1;
-  }
-  if (HiggsRotFixed(pos_si_Gm, pos_si_eta1) < 0) // Gm eta1 (+ cos(beta))
-  {
-    HiggsRotFixed.row(pos_si_Gm) *= -1;
-  }
-  if (HiggsRotFixed(pos_si_Hp, pos_si_rho2) < 0) // Hp rho2 (+ cos(beta))
-  {
-    HiggsRotFixed.row(pos_si_Hp) *= -1;
-  }
-  if (HiggsRotFixed(pos_si_Hm, pos_si_eta2) < 0) // Hm eta2 (+ cos(beta))
-  {
-    HiggsRotFixed.row(pos_si_Hm) *= -1;
+    if (i != pos_si_G0)
+    {
+      row1 += std::abs(RotG0MassBasis(pos_G0, i));
+    }
+
+    if (i != pos_G0)
+    {
+      col1 += std::abs(RotG0MassBasis(i, pos_si_G0));
+    }
   }
 
-  // Check neutral submatrix
-  // Use the "ScannerS" criteria from arXiv:2007.02985 Eq. (6)
-  // (since they use the same parametrisation of the angles as BSMPT):
-  // * (1) if R[1][1] < 0: h1 -> -h1 (i.e. multiply the h1 row with -1)
-  // * (2) if R[3][3] < 0: h3 -> -h3 (i.e. multiply the h3 row with -1)
-  // * (3) if det R < 0: h2 -> -h2 (i.e. multiply the h2 row with -1)
+  // Consistency check that the Goldstone was rotated out properly:
+  // "pos_(si)_G0"th row/column should contain only zeroes except for the diagonal element
+  if (std::abs(std::abs(RotG0MassBasis(pos_G0, pos_si_G0)) - 1.0) > ARMZeroThreshold
+      or std::abs(row1) > ARMZeroThreshold or std::abs(col1) > ARMZeroThreshold)
+  {
+    throw std::runtime_error("Error. Something went wrong after rotating "
+                             "out the neutral Goldstone.");
+  }
+
+  // Find the indices of the mass eigenstates when going from the interaction basis,
+  // where the neutral Goldstone was rotated out ("semi-interaction basis") to the
+  // mass basis, as these are the ones relevant for adjusting the sign conventions
+  auto [pos_si_Gp, pos_si_Gm, pos_si_Hp, pos_si_Hm,
+        pos_si_h1, pos_si_h2, pos_si_h3] = FindSemiMassBasisIndices(
+                                            HiggsMasses, RotG0MassBasis);
+
+  // Neutral Goldstone; flip sign if its element, which should be 1, is negative
+  if (RotG0MassBasis(pos_G0, pos_si_G0) < 0) // G0 G0 (+1)
+  {
+    RotG0MassBasis.row(pos_G0) *= -1;
+  }
+
+  // charged submatrix, should be {{cos(beta), sin(beta)}, {-sin(beta), cos(beta)}}
+  // with beta [-pi/2, pi/2], such that cos(beta) >= 0:
+  if (RotG0MassBasis(pos_si_Gp, pos_si_rho1) < 0) // Gp rho1 (+ cos(beta))
+  {
+    RotG0MassBasis.row(pos_si_Gp) *= -1;
+  }
+  if (RotG0MassBasis(pos_si_Gm, pos_si_eta1) < 0) // Gm eta1 (+ cos(beta))
+  {
+    RotG0MassBasis.row(pos_si_Gm) *= -1;
+  }
+  if (RotG0MassBasis(pos_si_Hp, pos_si_rho2) < 0) // Hp rho2 (+ cos(beta))
+  {
+    RotG0MassBasis.row(pos_si_Hp) *= -1;
+  }
+  if (RotG0MassBasis(pos_si_Hm, pos_si_eta2) < 0) // Hm eta2 (+ cos(beta))
+  {
+    RotG0MassBasis.row(pos_si_Hm) *= -1;
+  }
+
+  /*
+   * Check neutral submatrix
+   * Use the "ScannerS" criteria from arXiv:2007.02985 Eq. (6)
+   * (since they use the same parametrisation of the angles as BSMPT):
+   * * (1) if R[1][1] < 0: h1 -> -h1 (i.e. multiply the h1 row with -1)
+   * * (2) if R[3][3] < 0: h3 -> -h3 (i.e. multiply the h3 row with -1)
+   * * (3) if det R < 0: h2 -> -h2 (i.e. multiply the h2 row with -1)
+   */
 
   // check neutral, CP-even submatrix
-  if (HiggsRotFixed(pos_si_h1, pos_si_zeta1) < 0)
   // h1 zeta1 (condition (1) above, R11 < 0)
+  if (RotG0MassBasis(pos_si_h1, pos_si_zeta1) < 0)
   {
     // if negative, flip sign of h1
-    HiggsRotFixed.row(pos_si_h1) *= -1;
+    RotG0MassBasis.row(pos_si_h1) *= -1;
   }
 
-  if (HiggsRotFixed(pos_si_h3, pos_si_zeta3) < 0)
   // h3 zeta3 (condition (2) above, R33 < 0)
+  if (RotG0MassBasis(pos_si_h3, pos_si_zeta3) < 0)
   {
     // if negative, flip sign of h3
-    HiggsRotFixed.row(pos_si_h3) *= -1;
+    RotG0MassBasis.row(pos_si_h3) *= -1;
   }
 
   // Calculate the determinant AFTER flipping the signs for rows 1 and 3 above
-  MatrixXd HiggsRotFixedNeutral(3, 3);
-  HiggsRotFixedNeutral(0, 0) = HiggsRotFixed(pos_si_h1, pos_si_zeta1);
-  HiggsRotFixedNeutral(0, 1) = HiggsRotFixed(pos_si_h1, pos_si_zeta2);
-  HiggsRotFixedNeutral(0, 2) = HiggsRotFixed(pos_si_h1, pos_si_zeta3);
+  MatrixXd RotG0MassBasisNeutral(3, 3);
+  RotG0MassBasisNeutral(0, 0) = RotG0MassBasis(pos_si_h1, pos_si_zeta1);
+  RotG0MassBasisNeutral(0, 1) = RotG0MassBasis(pos_si_h1, pos_si_zeta2);
+  RotG0MassBasisNeutral(0, 2) = RotG0MassBasis(pos_si_h1, pos_si_zeta3);
 
-  HiggsRotFixedNeutral(1, 0) = HiggsRotFixed(pos_si_h2, pos_si_zeta1);
-  HiggsRotFixedNeutral(1, 1) = HiggsRotFixed(pos_si_h2, pos_si_zeta2);
-  HiggsRotFixedNeutral(1, 2) = HiggsRotFixed(pos_si_h2, pos_si_zeta3);
+  RotG0MassBasisNeutral(1, 0) = RotG0MassBasis(pos_si_h2, pos_si_zeta1);
+  RotG0MassBasisNeutral(1, 1) = RotG0MassBasis(pos_si_h2, pos_si_zeta2);
+  RotG0MassBasisNeutral(1, 2) = RotG0MassBasis(pos_si_h2, pos_si_zeta3);
 
-  HiggsRotFixedNeutral(2, 0) = HiggsRotFixed(pos_si_h3, pos_si_zeta1);
-  HiggsRotFixedNeutral(2, 1) = HiggsRotFixed(pos_si_h3, pos_si_zeta2);
-  HiggsRotFixedNeutral(2, 2) = HiggsRotFixed(pos_si_h3, pos_si_zeta3);
+  RotG0MassBasisNeutral(2, 0) = RotG0MassBasis(pos_si_h3, pos_si_zeta1);
+  RotG0MassBasisNeutral(2, 1) = RotG0MassBasis(pos_si_h3, pos_si_zeta2);
+  RotG0MassBasisNeutral(2, 2) = RotG0MassBasis(pos_si_h3, pos_si_zeta3);
 
-  if (HiggsRotFixedNeutral.determinant() < 0)
   // condition (3) above, det(R) < 0
+  if (RotG0MassBasisNeutral.determinant() < 0)
   {
     // if negative, flip sign of h2
-    HiggsRotFixed.row(pos_si_h2) *= -1;
+    RotG0MassBasis.row(pos_si_h2) *= -1;
   }
 
-  // Undo Goldstone rotation and flip that made G0 the first element
-  MatrixXd HiggsRotFixedGoldstone(NHiggs, NHiggs);
-  for (std::size_t i = 0; i < NHiggs; i++)
-  {
-    HiggsRotFixedGoldstone.row(i) = HiggsRotFixed.row(i);
-  }
-
-  HiggsRotFixed = MoveGoldstoneFirst * HiggsRotFixedGoldstone * RotGoldstone;
-
-  // Extract the fixed mixing angles
-  double sina2 = HiggsRotFixedGoldstone(pos_si_h1, pos_si_zeta3); // +sin(a2)
-  double cosa2 = std::sqrt(1.0 - sina2 * sina2);
-  alpha1       = std::asin(HiggsRotFixedGoldstone(pos_si_h1, pos_si_zeta2) /
-                     cosa2); // +sin(a1) cos(a2)
+  // Extract the fixed mixing angles from "semi-interaction" rotation matrix
+  double sina2 = RotG0MassBasis(pos_si_h1, pos_si_zeta3); // +sin(a2)
+  double cosa2 = std::sqrt(1.0 - sina2*sina2);
+  alpha1       = std::asin(RotG0MassBasis(pos_si_h1, pos_si_zeta2)/cosa2); // +sin(a1) cos(a2)
   alpha2       = std::asin(sina2);
-  alpha3       = std::asin(HiggsRotFixedGoldstone(pos_si_h2, pos_si_zeta3) /
-                     cosa2); // +cos(a2) sin(a3)
+  alpha3       = std::asin(RotG0MassBasis(pos_si_h2, pos_si_zeta3)/cosa2); // +cos(a2) sin(a3)
+
+  // Undo Goldstone rotation to obtain the rotation matrix that goes from the
+  // interaction eigenstates to the mass basis, corresponding to the original
+  // HiggsRotationMatrix[][], just now with fixed convention of signs
+  HiggsRot = RotG0MassBasis * RotG0;
 
   for (std::size_t i = 0; i < NHiggs; i++)
   {
     for (std::size_t j = 0; j < NHiggs; j++)
     {
-      HiggsRotationMatrixEnsuredConvention[i][j] = HiggsRotFixed(i, j);
+      HiggsRotationMatrixEnsuredConvention[i][j] = HiggsRot(i, j);
     }
   }
-
-  return;
 }
 
 void Class_Potential_C2HDM::TripleHiggsCouplings()
