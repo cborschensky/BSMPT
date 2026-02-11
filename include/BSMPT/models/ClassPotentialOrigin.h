@@ -615,6 +615,29 @@ public:
   }
 
   /**
+   * @brief get_HiggsRotationMatrix
+   * @param i
+   * @param j
+   * @return HiggsRotationMatrix[i][j]
+   */
+  double get_HiggsRotationMatrix(std::size_t i,
+                                 std::size_t j) const
+  {
+    return HiggsRotationMatrix.at(i).at(j);
+  }
+  /**
+   * @brief get_HiggsRotationMatrixEnsuredConvention
+   * @param i
+   * @param j
+   * @return HiggsRotationMatrixEnsuredConvention[i][j]
+   */
+  double get_HiggsRotationMatrixEnsuredConvention(std::size_t i,
+                                                  std::size_t j) const
+  {
+    return HiggsRotationMatrixEnsuredConvention.at(i).at(j);
+  }
+
+  /**
    * Sets the UseIndexCol var
    */
   void setUseIndexCol(std::string legend);
@@ -994,6 +1017,10 @@ public:
    */
   Eigen::MatrixXcd LeptonMassMatrix(const std::vector<double> &v) const;
 
+  /**
+   * Zero threshold used for double precision comparisons in AdjustRotationMatrix()
+   */
+  const double ARMZeroThreshold = 1e-5;
   /**
    * Ensures the correct rotation matrix convention
    */
