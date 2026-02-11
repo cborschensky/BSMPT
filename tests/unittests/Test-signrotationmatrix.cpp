@@ -367,7 +367,7 @@ TEST_CASE("Checking sign convention of rotation matrix for CxSM", "[signrotation
       }
     }
 
-    // Do not test the angles for CP in the Dark, as a1, a2, a3 from the data input is potentially for a
+    // Do not test the angles for CxSM, as a1, a2, a3 from the data input is potentially for a
     //   different mass ordering, as they are input values for ScannerS
     // for (std::size_t i = 0; i < numAngles; ++i)
     // {
