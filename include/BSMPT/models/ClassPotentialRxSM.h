@@ -63,6 +63,24 @@ public:
   void set_CT_Pot_Par(const std::vector<double> &par) override;
   void write() const override;
 
+  /*
+   * RxSM interaction basis:
+   * 0     1     2     3      4
+   * rho1, eta1, psi1, zeta1, zetaS
+   */
+  const std::size_t pos_rho1 = 0, pos_eta1 = 1, pos_psi1 = 2,
+                    pos_zeta1 = 3, pos_zetaS = 4;
+
+  /**
+   * Helper function to determine mass indices of rotation matrix
+   * @param HiggsMasses : vector with squared Higgs masses allocated
+   *                      in AdjustRotationMatrix
+   * @param HiggsRot : rotation matrix from interaction to mass basis
+   *                   as calculated in AdjustRotationMatrix
+   */
+  void FindMassBasisIndices(const std::vector<double> &HiggsMasses,
+                            const Eigen::MatrixXd &HiggsRot);
+
   void AdjustRotationMatrix() override;
   void TripleHiggsCouplings() override;
   std::vector<double> calc_CT() const override;
