@@ -64,6 +64,14 @@ TEST_CASE("Test almost_the_same", "[gw]")
   REQUIRE(almost_the_same({0, 1}, {0, 0.991}, false, 0.01, 1e-5));
   REQUIRE(not almost_the_same({0, 1}, {0, 1.02}, false, 0.01, 1e-5));
   REQUIRE(not almost_the_same({0, 1}, {0, 0.991}, false, 0.01, 0));
+  REQUIRE(almost_the_same(std::complex<double>{1, 1},
+                          std::complex<double>{1.0001, 0.9999},
+                          0.001,
+                          0));
+  REQUIRE_THROWS_AS(almost_the_same({0}, {0, 0}, true, 0.01, 1e-5),
+                    std::runtime_error);
+  REQUIRE(almost_the_same({1, -1}, {-1, 1}, false, 0.01, 1e-5));
+  REQUIRE(not almost_the_same({1, -1}, {-1, 1}, true, 0.01, 1e-5));
 }
 
 TEST_CASE("Test I_alpha", "[gw]")
@@ -615,6 +623,42 @@ TEST_CASE("Checking phase tracking for BP2 - Mode 2", "[gw]")
   REQUIRE(vac.PhasesList.size() == 2);
 }
 
+TEST_CASE("Checking negative alpha case R2HDM", "[gw]")
+{
+  const std::vector<double> example_point_R2HDM{
+      /* lambda_1 = */ 6.1790997800878733,
+      /* lambda_2 = */ 0.25833592686924883,
+      /* lambda_3 = */ 1.4365660325357121,
+      /* lambda_4 = */ -0.88084250125747032,
+      /* lambda_5 = */ -0.58605039437291362,
+      /* m_{12}^2 = */ 405.82270614210461,
+      /* tan(beta) = */ 14.110965513994532,
+      /* Yukawa Type = */ 1};
+
+  using namespace BSMPT;
+  SetLogger({"--logginglevel::complete=true"});
+  const auto SMConstants = GetSMConstants();
+  std::shared_ptr<BSMPT::Class_Potential_Origin> modelPointer =
+      ModelID::FChoose(ModelID::ModelIDs::R2HDM, SMConstants);
+  modelPointer->initModel(example_point_R2HDM);
+
+  user_input input;
+  input.modelPointer   = modelPointer;
+  input.gw_calculation = true;
+  input.T_high         = 1000;
+  TransitionTracer trans(input);
+
+  trans.ListBounceSolution.at(0).SetAndCalculateGWParameters(
+      TransitionTemperature::Percolation);
+
+  auto output = trans.output_store;
+
+  REQUIRE(output.vec_gw_data.at(0).alpha.value() < 0);
+
+  REQUIRE(trans.ListBounceSolution.at(0).status_bounce_sol ==
+          StatusGW::Failure);
+}
+
 TEST_CASE("Checking phase tracking for BP3 with Mode 0", "[gw]")
 {
   const std::vector<double> example_point_CXSM{/* v = */ 245.34120667410863,
@@ -906,7 +950,7 @@ TEST_CASE("Checking phase tracking and GW for BP3", "[gw]")
   trans.ListBounceSolution.at(0).UserDefined_vwall = -2;
   trans.ListBounceSolution.at(0).SetAndCalculateGWParameters(
       TransitionTemperature::Percolation);
-  REQUIRE(0.6539310662 ==
+  REQUIRE(0.5597359442 ==
           Approx(trans.ListBounceSolution.at(0).vwall).epsilon(1e-2));
 }
 
@@ -1000,7 +1044,7 @@ TEST_CASE("Checking phase tracking and GW for BP3 (low sample) and not "
   trans.ListBounceSolution.at(0).UserDefined_vwall = -2;
   trans.ListBounceSolution.at(0).SetAndCalculateGWParameters(
       TransitionTemperature::Percolation);
-  REQUIRE(0.6539310662 ==
+  REQUIRE(0.5597359442 ==
           Approx(trans.ListBounceSolution.at(0).vwall).epsilon(1e-2));
 }
 
@@ -1086,7 +1130,7 @@ TEST_CASE("Test for SO(3)", "[gw]")
   modelPointer->initModel(example_point_CXSM, false);
   std::shared_ptr<MinimumTracer> MinTracer(
       new MinimumTracer(modelPointer, Minimizer::WhichMinimizerDefault, false));
-  MinTracer->FindFlatDirections();
+  MinTracer->FindFlatDirections(Order::TreeLevel);
   REQUIRE(MinTracer->flat_3D_dirs.size() == 1);
 }
 
