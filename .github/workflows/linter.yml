@@ -16,11 +16,7 @@ jobs:
   
     steps:          
       - name: Checkout remote branch
-<<<<<<< HEAD
-        uses: actions/checkout@v4
-=======
-        uses: actions/checkout@v6
->>>>>>> master
+         uses: actions/checkout@v6
         with:
           fetch-depth: 0
           ref: ${{ github.head_ref }}
@@ -29,11 +25,7 @@ jobs:
         if: env.LocalCommit == 'true'
 
       - name: Checkout remote branch
-<<<<<<< HEAD
-        uses: actions/checkout@v4
-=======
-        uses: actions/checkout@v6
->>>>>>> master
+         uses: actions/checkout@v6
         with:
           fetch-depth: 0
           ref: ${{ github.head_ref }}
