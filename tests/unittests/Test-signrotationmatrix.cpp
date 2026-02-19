@@ -30,7 +30,7 @@ TEST_CASE("Checking sign convention of rotation matrix for C2HDM", "[signrotatio
       ModelID::FChoose(ModelID::ModelIDs::C2HDM, SMConstants);
   auto nPar = modelPointer->get_nPar();
 
-  std::ifstream testData(BASE_PATH "/tests/unittests/signrotationmatrix_data/c2hdm_unittest_signrotationmatrix.tsv");
+  std::ifstream testData(TEST_DATA_PATH "/signrotationmatrix_data/c2hdm_unittest_signrotationmatrix.tsv");
 
   auto Check = [](auto result, auto expected)
   {
@@ -48,6 +48,7 @@ TEST_CASE("Checking sign convention of rotation matrix for C2HDM", "[signrotatio
   std::getline(testData, line); // header, ignore
 
   while (std::getline(testData, line)) {
+    // Read in test data and parse properly: first the input parameters, then the rotation matrix elements
     std::stringstream ss(line);
     std::vector<double> parameter_point;
     while (!ss.eof() && parameter_point.size() < nPar) {
@@ -65,8 +66,10 @@ TEST_CASE("Checking sign convention of rotation matrix for C2HDM", "[signrotatio
 
     modelPointer->initModel(parameter_point);
 
+    // Since we need to access model-specific variables, cast modelPointer to the actual child class
     auto modelSpecificPointer = std::static_pointer_cast<BSMPT::Models::Class_Potential_C2HDM>(modelPointer);
 
+    // Define some abbreviations
     auto CosBeta = modelSpecificPointer->C_CosBeta;
     auto SinBeta = modelSpecificPointer->C_SinBeta;
 
@@ -89,6 +92,7 @@ TEST_CASE("Checking sign convention of rotation matrix for C2HDM", "[signrotatio
     // Ensure that the test data is in the correct format, i.e. first all rotation matrix elements, then n*(n - 1)/2 angles
     REQUIRE(rotation_matrix_angles.size() == n*n + numAngles);
 
+    // Construct the neutral 3x3 mixing matrix
     std::vector<std::vector<double>> HiggsRotNeutralFixed(n, std::vector<double>(n));
     HiggsRotNeutralFixed[0][0] = modelPointer->get_HiggsRotationMatrixEnsuredConvention(pos_h1, pos_zeta1);
     HiggsRotNeutralFixed[0][1] = modelPointer->get_HiggsRotationMatrixEnsuredConvention(pos_h1, pos_zeta2);
@@ -112,12 +116,14 @@ TEST_CASE("Checking sign convention of rotation matrix for C2HDM", "[signrotatio
       }
     }
 
+    // Check also the angles
     for (std::size_t i = 0; i < numAngles; ++i)
     {
       auto expected = rotation_matrix_angles[n*n + i];
       Check(alphas[i], expected);
     }
 
+    // Do the checks also for the remaining elements (Goldstone, charged Higgs)
     auto pos_Gp = modelSpecificPointer->pos_Gp;
     auto pos_Gm = modelSpecificPointer->pos_Gm;
     auto pos_Hp = modelSpecificPointer->pos_Hp;
@@ -164,7 +170,7 @@ TEST_CASE("Checking sign convention of rotation matrix for CP in the Dark", "[si
       ModelID::FChoose(ModelID::ModelIDs::CPINTHEDARK, SMConstants);
   auto nPar = modelPointer->get_nPar();
 
-  std::ifstream testData(BASE_PATH "/tests/unittests/signrotationmatrix_data/cpinthedark_unittest_signrotationmatrix.tsv");
+  std::ifstream testData(TEST_DATA_PATH "/tests/unittests/signrotationmatrix_data/cpinthedark_unittest_signrotationmatrix.tsv");
 
   auto Check = [](auto result, auto expected)
   {
@@ -182,6 +188,7 @@ TEST_CASE("Checking sign convention of rotation matrix for CP in the Dark", "[si
   std::getline(testData, line); // header, ignore
 
   while (std::getline(testData, line)) {
+    // Read in test data and parse properly: first the input parameters, then the rotation matrix elements
     std::stringstream ss(line);
     std::vector<double> parameter_point;
     while (!ss.eof() && parameter_point.size() < nPar) {
@@ -199,6 +206,7 @@ TEST_CASE("Checking sign convention of rotation matrix for CP in the Dark", "[si
 
     modelPointer->initModel(parameter_point);
 
+    // Since we need to access model-specific variables, cast modelPointer to the actual child class
     auto modelSpecificPointer = std::static_pointer_cast<BSMPT::Models::Class_Potential_CPintheDark>(modelPointer);
 
     std::vector<double> alphas;
@@ -206,6 +214,7 @@ TEST_CASE("Checking sign convention of rotation matrix for CP in the Dark", "[si
     alphas.push_back(modelSpecificPointer->alpha2);
     alphas.push_back(modelSpecificPointer->alpha3);
 
+    // Define some abbreviations
     auto pos_h1 = modelSpecificPointer->pos_h1;
     auto pos_h2 = modelSpecificPointer->pos_h2;
     auto pos_h3 = modelSpecificPointer->pos_h3;
@@ -219,6 +228,7 @@ TEST_CASE("Checking sign convention of rotation matrix for CP in the Dark", "[si
     // Ensure that the test data is in the correct format, i.e. first all rotation matrix elements, then n*(n - 1)/2 angles
     REQUIRE(rotation_matrix_angles.size() == n*n + numAngles);
 
+    // Construct the neutral 3x3 mixing matrix
     std::vector<std::vector<double>> HiggsRotNeutralFixed(n, std::vector<double>(n));
     HiggsRotNeutralFixed[0][0] = modelPointer->get_HiggsRotationMatrixEnsuredConvention(pos_h1, pos_zeta2);
     HiggsRotNeutralFixed[0][1] = modelPointer->get_HiggsRotationMatrixEnsuredConvention(pos_h1, pos_psi2);
@@ -244,12 +254,8 @@ TEST_CASE("Checking sign convention of rotation matrix for CP in the Dark", "[si
 
     // Do not test the angles for CP in the Dark, as a1, a2, a3 from the data input is potentially for a
     //   different mass ordering, as they are input values for ScannerS
-    // for (std::size_t i = 0; i < numAngles; ++i)
-    // {
-    //   auto expected = rotation_matrix_angles[n*n + i];
-    //   Check(alphas[i], expected);
-    // }
 
+    // Do the checks also for the remaining elements (Goldstone, charged Higgs)
     auto pos_Gp = modelSpecificPointer->pos_Gp;
     auto pos_Gm = modelSpecificPointer->pos_Gm;
     auto pos_Hp = modelSpecificPointer->pos_Hp;
@@ -288,7 +294,7 @@ TEST_CASE("Checking sign convention of rotation matrix for CxSM", "[signrotation
       ModelID::FChoose(ModelID::ModelIDs::CXSM, SMConstants);
   auto nPar = modelPointer->get_nPar();
 
-  std::ifstream testData(BASE_PATH "/tests/unittests/signrotationmatrix_data/cxsm_unittest_signrotationmatrix.tsv");
+  std::ifstream testData(TEST_DATA_PATH "/tests/unittests/signrotationmatrix_data/cxsm_unittest_signrotationmatrix.tsv");
 
   auto Check = [](auto result, auto expected)
   {
@@ -306,6 +312,7 @@ TEST_CASE("Checking sign convention of rotation matrix for CxSM", "[signrotation
   std::getline(testData, line); // header, ignore
 
   while (std::getline(testData, line)) {
+    // Read in test data and parse properly: first the input parameters, then the rotation matrix elements
     std::stringstream ss(line);
     std::vector<double> parameter_point;
     while (!ss.eof() && parameter_point.size() < nPar) {
@@ -323,6 +330,7 @@ TEST_CASE("Checking sign convention of rotation matrix for CxSM", "[signrotation
 
     modelPointer->initModel(parameter_point);
 
+    // Since we need to access model-specific variables, cast modelPointer to the actual child class
     auto modelSpecificPointer = std::static_pointer_cast<BSMPT::Models::Class_CxSM>(modelPointer);
 
     std::vector<double> alphas;
@@ -330,6 +338,7 @@ TEST_CASE("Checking sign convention of rotation matrix for CxSM", "[signrotation
     alphas.push_back(modelSpecificPointer->alpha2);
     alphas.push_back(modelSpecificPointer->alpha3);
 
+    // Define some abbreviations
     auto pos_h1 = modelSpecificPointer->pos_h1;
     auto pos_h2 = modelSpecificPointer->pos_h2;
     auto pos_h3 = modelSpecificPointer->pos_h3;
@@ -343,6 +352,7 @@ TEST_CASE("Checking sign convention of rotation matrix for CxSM", "[signrotation
     // Ensure that the test data is in the correct format, i.e. first all rotation matrix elements, then n*(n - 1)/2 angles
     REQUIRE(rotation_matrix_angles.size() == n*n + numAngles);
 
+    // Construct the neutral 3x3 mixing matrix
     std::vector<std::vector<double>> HiggsRotNeutralFixed(n, std::vector<double>(n));
     HiggsRotNeutralFixed[0][0] = modelPointer->get_HiggsRotationMatrixEnsuredConvention(pos_h1, pos_zeta1);
     HiggsRotNeutralFixed[0][1] = modelPointer->get_HiggsRotationMatrixEnsuredConvention(pos_h1, pos_zeta2);
@@ -368,12 +378,8 @@ TEST_CASE("Checking sign convention of rotation matrix for CxSM", "[signrotation
 
     // Do not test the angles for CxSM, as a1, a2, a3 from the data input is potentially for a
     //   different mass ordering, as they are input values for ScannerS
-    // for (std::size_t i = 0; i < numAngles; ++i)
-    // {
-    //   auto expected = rotation_matrix_angles[n*n + i];
-    //   Check(alphas[i], expected);
-    // }
 
+    // Do the checks also for the remaining elements (Goldstone, charged Higgs)
     auto pos_Gp = modelSpecificPointer->pos_Gp;
     auto pos_Gm = modelSpecificPointer->pos_Gm;
     auto pos_G0 = modelSpecificPointer->pos_G0;
@@ -400,7 +406,7 @@ TEST_CASE("Checking sign convention of rotation matrix for N2HDM", "[signrotatio
       ModelID::FChoose(ModelID::ModelIDs::N2HDM, SMConstants);
   auto nPar = modelPointer->get_nPar();
 
-  std::ifstream testData(BASE_PATH "/tests/unittests/signrotationmatrix_data/n2hdm_unittest_signrotationmatrix.tsv");
+  std::ifstream testData(TEST_DATA_PATH "/tests/unittests/signrotationmatrix_data/n2hdm_unittest_signrotationmatrix.tsv");
 
   auto Check = [](auto result, auto expected)
   {
@@ -418,6 +424,7 @@ TEST_CASE("Checking sign convention of rotation matrix for N2HDM", "[signrotatio
   std::getline(testData, line); // header, ignore
 
   while (std::getline(testData, line)) {
+    // Read in test data and parse properly: first the input parameters, then the rotation matrix elements
     std::stringstream ss(line);
     std::vector<double> parameter_point;
     while (!ss.eof() && parameter_point.size() < nPar) {
@@ -435,8 +442,10 @@ TEST_CASE("Checking sign convention of rotation matrix for N2HDM", "[signrotatio
 
     modelPointer->initModel(parameter_point);
 
+    // Since we need to access model-specific variables, cast modelPointer to the actual child class
     auto modelSpecificPointer = std::static_pointer_cast<BSMPT::Models::Class_Potential_N2HDM>(modelPointer);
 
+    // Define some abbreviations
     auto CosBeta = modelSpecificPointer->C_CosBeta;
     auto SinBeta = modelSpecificPointer->C_SinBeta;
 
@@ -458,6 +467,7 @@ TEST_CASE("Checking sign convention of rotation matrix for N2HDM", "[signrotatio
     // Ensure that the test data is in the correct format, i.e. first all rotation matrix elements, then n*(n - 1)/2 angles
     REQUIRE(rotation_matrix_angles.size() == n*n + numAngles);
 
+    // Construct the neutral 3x3 mixing matrix
     std::vector<std::vector<double>> HiggsRotNeutralFixed(n, std::vector<double>(n));
     HiggsRotNeutralFixed[0][0] = modelPointer->get_HiggsRotationMatrixEnsuredConvention(pos_h1, pos_zeta1);
     HiggsRotNeutralFixed[0][1] = modelPointer->get_HiggsRotationMatrixEnsuredConvention(pos_h1, pos_zeta2);
@@ -481,12 +491,14 @@ TEST_CASE("Checking sign convention of rotation matrix for N2HDM", "[signrotatio
       }
     }
 
+    // Check also the angles
     for (std::size_t i = 0; i < numAngles; ++i)
     {
       auto expected = rotation_matrix_angles[n*n + i];
       Check(alphas[i], expected);
     }
 
+    // Do the checks also for the remaining elements (Goldstone, charged Higgs)
     auto pos_G0 = modelSpecificPointer->pos_G0;
     auto pos_A = modelSpecificPointer->pos_A;
     auto pos_Gp = modelSpecificPointer->pos_Gp;
@@ -542,7 +554,7 @@ TEST_CASE("Checking sign convention of rotation matrix for R2HDM", "[signrotatio
       ModelID::FChoose(ModelID::ModelIDs::R2HDM, SMConstants);
   auto nPar = modelPointer->get_nPar();
 
-  std::ifstream testData(BASE_PATH "/tests/unittests/signrotationmatrix_data/r2hdm_unittest_signrotationmatrix.tsv");
+  std::ifstream testData(TEST_DATA_PATH "/tests/unittests/signrotationmatrix_data/r2hdm_unittest_signrotationmatrix.tsv");
 
   auto Check = [](auto result, auto expected)
   {
@@ -560,6 +572,7 @@ TEST_CASE("Checking sign convention of rotation matrix for R2HDM", "[signrotatio
   std::getline(testData, line); // header, ignore
 
   while (std::getline(testData, line)) {
+    // Read in test data and parse properly: first the input parameters, then the rotation matrix elements
     std::stringstream ss(line);
     std::vector<double> parameter_point;
     while (!ss.eof() && parameter_point.size() < nPar) {
@@ -581,8 +594,10 @@ TEST_CASE("Checking sign convention of rotation matrix for R2HDM", "[signrotatio
 
     modelPointer->initModel(parameter_point);
 
+    // Since we need to access model-specific variables, cast modelPointer to the actual child class
     auto modelSpecificPointer = std::static_pointer_cast<BSMPT::Models::Class_Potential_R2HDM>(modelPointer);
 
+    // Define some abbreviations
     auto CosBeta = modelSpecificPointer->C_CosBeta;
     auto SinBeta = modelSpecificPointer->C_SinBeta;
 
@@ -600,6 +615,7 @@ TEST_CASE("Checking sign convention of rotation matrix for R2HDM", "[signrotatio
     // Ensure that the test data is in the correct format, i.e. first all rotation matrix elements, then n*(n - 1)/2 angles
     REQUIRE(rotation_matrix_angles.size() == n*n + numAngles);
 
+    // Construct the neutral 2x2 mixing matrix
     std::vector<std::vector<double>> HiggsRotNeutralFixed(n, std::vector<double>(n));
     HiggsRotNeutralFixed[0][0] = modelPointer->get_HiggsRotationMatrixEnsuredConvention(pos_H, pos_zeta1);
     HiggsRotNeutralFixed[0][1] = modelPointer->get_HiggsRotationMatrixEnsuredConvention(pos_H, pos_zeta2);
@@ -617,12 +633,14 @@ TEST_CASE("Checking sign convention of rotation matrix for R2HDM", "[signrotatio
       }
     }
 
+    // Check also the angles
     for (std::size_t i = 0; i < numAngles; ++i)
     {
       auto expected = rotation_matrix_angles[n*n + i];
       Check(alphas[i], expected);
     }
 
+    // Do the checks also for the remaining elements (Goldstone, charged Higgs)
     auto pos_Gp = modelSpecificPointer->pos_Gp;
     auto pos_Gm = modelSpecificPointer->pos_Gm;
     auto pos_Hp = modelSpecificPointer->pos_Hp;

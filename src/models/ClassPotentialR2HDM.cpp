@@ -831,14 +831,21 @@ void Class_Potential_R2HDM::FindMassBasisIndices(
   {
     for (std::size_t j = 0; j < NHiggs; j++)
     {
-      if (not((j == pos_rho1 and (i == pos_Gp or i == pos_Hp)) or
-              (j == pos_eta1 and (i == pos_Gm or i == pos_Hm)) or
-              (j == pos_zeta1 and (i == pos_h or i == pos_H)) or
-              (j == pos_psi1 and (i == pos_G0 or i == pos_A)) or
-              (j == pos_rho2 and (i == pos_Gp or i == pos_Hp)) or
-              (j == pos_eta2 and (i == pos_Gm or i == pos_Hm)) or
-              (j == pos_zeta2 and (i == pos_h or i == pos_H)) or
-              (j == pos_psi2 and (i == pos_G0 or i == pos_A))))
+      bool IsChargedHiggsP =
+          (j == pos_rho1 and (i == pos_Gp or i == pos_Hp)) or
+          (j == pos_rho2 and (i == pos_Gp or i == pos_Hp));
+      bool IsChargedHiggsM =
+          (j == pos_eta1 and (i == pos_Gm or i == pos_Hm)) or
+          (j == pos_eta2 and (i == pos_Gm or i == pos_Hm));
+      bool IsNeutralHiggsCPE =
+          (j == pos_zeta1 and (i == pos_h or i == pos_H)) or
+          (j == pos_zeta2 and (i == pos_h or i == pos_H));
+      bool IsNeutralHiggsCPO =
+          (j == pos_psi1 and (i == pos_G0 or i == pos_A)) or
+          (j == pos_psi2 and (i == pos_G0 or i == pos_A));
+
+      if (not(IsChargedHiggsP or IsChargedHiggsM
+              or IsNeutralHiggsCPE or IsNeutralHiggsCPO))
       {
         zero_element = true;
       }

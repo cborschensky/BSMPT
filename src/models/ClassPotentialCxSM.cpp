@@ -816,15 +816,19 @@ void Class_CxSM::FindMassBasisIndices(
   {
     for (std::size_t j = 0; j < NHiggs; j++)
     {
-      if (not((j == pos_i_Gp and i == pos_Gp) or
-              (j == pos_i_Gm and i == pos_Gm) or
-              (j == pos_i_G0 and i == pos_G0) or
-              (j == pos_zeta1 and
-               (i == pos_h1 or i == pos_h2 or i == pos_h3)) or
-              (j == pos_zeta2 and
-               (i == pos_h1 or i == pos_h2 or i == pos_h3)) or
-              (j == pos_zeta3 and
-               (i == pos_h1 or i == pos_h2 or i == pos_h3))))
+      bool IsChargedGoldstoneP = (j == pos_i_Gp and i == pos_Gp);
+      bool IsChargedGoldstoneM = (j == pos_i_Gm and i == pos_Gm);
+      bool IsNeutralGoldstone = (j == pos_i_G0 and i == pos_G0);
+      bool IsNeutralHiggs =
+          (j == pos_zeta1 and
+            (i == pos_h1 or i == pos_h2 or i == pos_h3)) or
+          (j == pos_zeta2 and
+            (i == pos_h1 or i == pos_h2 or i == pos_h3)) or
+          (j == pos_zeta3 and
+            (i == pos_h1 or i == pos_h2 or i == pos_h3));
+
+      if (not(IsChargedGoldstoneP or IsChargedGoldstoneM
+              or IsNeutralGoldstone or IsNeutralHiggs))
       {
         zero_element = true;
       }

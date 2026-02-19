@@ -1405,18 +1405,25 @@ void Class_Potential_CPintheDark::FindMassBasisIndices(
   {
     for (std::size_t j = 0; j < NHiggs; j++)
     {
-      if (not((j == pos_rho1 and i == pos_Gp) or
-              (j == pos_eta1 and i == pos_Gm) or
-              (j == pos_rho2 and i == pos_Hp) or
-              (j == pos_eta2 and i == pos_Hm) or
-              (j == pos_zeta1 and i == pos_HSM) or
-              (j == pos_psi1 and i == pos_G0) or
-              (j == pos_zeta2 and
-               (i == pos_h1 or i == pos_h2 or i == pos_h3)) or
-              (j == pos_psi2 and
-               (i == pos_h1 or i == pos_h2 or i == pos_h3)) or
-              (j == pos_rhoS and
-               (i == pos_h1 or i == pos_h2 or i == pos_h3))))
+      bool IsChargedHiggsP =
+          (j == pos_rho1 and i == pos_Gp) or
+          (j == pos_rho2 and i == pos_Hp);
+      bool IsChargedHiggsM =
+          (j == pos_eta1 and i == pos_Gm) or
+          (j == pos_eta2 and i == pos_Hm);
+      bool IsNeutralSMHiggs = (j == pos_zeta1 and i == pos_HSM);
+      bool IsNeutralGoldstone = (j == pos_psi1 and i == pos_G0);
+      bool IsNeutralDarkHiggs =
+          (j == pos_zeta2 and
+            (i == pos_h1 or i == pos_h2 or i == pos_h3)) or
+          (j == pos_psi2 and
+            (i == pos_h1 or i == pos_h2 or i == pos_h3)) or
+          (j == pos_rhoS and
+            (i == pos_h1 or i == pos_h2 or i == pos_h3));
+
+      if (not(IsChargedHiggsP or IsChargedHiggsM
+              or IsNeutralSMHiggs or IsNeutralGoldstone
+              or IsNeutralDarkHiggs))
       {
         zero_element = true;
       }

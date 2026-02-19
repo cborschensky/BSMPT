@@ -2443,18 +2443,25 @@ void Class_Potential_C2HDM::FindMassBasisIndices(
   {
     for (std::size_t j = 0; j < NHiggs; j++)
     {
-      if (not((j == pos_rho1 and (i == pos_Gp or i == pos_Hp)) or
-              (j == pos_rho2 and (i == pos_Gp or i == pos_Hp)) or
-              (j == pos_eta1 and (i == pos_Gm or i == pos_Hm)) or
-              (j == pos_eta2 and (i == pos_Gm or i == pos_Hm)) or
-              (j == pos_psi1 and (i == pos_G0 or i == pos_h1 or
-                                  i == pos_h2 or i == pos_h3)) or
-              (j == pos_psi2 and (i == pos_G0 or i == pos_h1 or
-                                  i == pos_h2 or i == pos_h3)) or
-              (j == pos_zeta1 and
-              (i == pos_h1 or i == pos_h2 or i == pos_h3)) or
-              (j == pos_zeta2 and
-              (i == pos_h1 or i == pos_h2 or i == pos_h3))))
+      bool IsChargedHiggsP =
+          (j == pos_rho1 and (i == pos_Gp or i == pos_Hp)) or
+          (j == pos_rho2 and (i == pos_Gp or i == pos_Hp));
+      bool IsChargedHiggsM =
+          (j == pos_eta1 and (i == pos_Gm or i == pos_Hm)) or
+          (j == pos_eta2 and (i == pos_Gm or i == pos_Hm));
+      bool IsNeutralHiggsA =
+          (j == pos_psi1 and (i == pos_G0 or i == pos_h1 or
+                              i == pos_h2 or i == pos_h3)) or
+          (j == pos_psi2 and (i == pos_G0 or i == pos_h1 or
+                              i == pos_h2 or i == pos_h3));
+      bool IsNeutralHiggsB =
+          (j == pos_zeta1 and (i == pos_h1 or i == pos_h2
+            or i == pos_h3)) or
+          (j == pos_zeta2 and (i == pos_h1 or i == pos_h2
+            or i == pos_h3));
+
+      if (not(IsChargedHiggsP or IsChargedHiggsM
+              or IsNeutralHiggsA or IsNeutralHiggsB))
       {
         zero_element = true;
       }
@@ -2621,16 +2628,21 @@ std::tuple<std::size_t, std::size_t, std::size_t, std::size_t,
       if (i == pos_G0)
         continue;
 
-      if (not((j == pos_si_rho1 and (i == pos_si_Gp or i == pos_si_Hp)) or
-              (j == pos_si_eta1 and (i == pos_si_Gm or i == pos_si_Hm)) or
-              (j == pos_si_rho2 and (i == pos_si_Gp or i == pos_si_Hp)) or
-              (j == pos_si_eta2 and (i == pos_si_Gm or i == pos_si_Hm)) or
-              (j == pos_si_zeta1 and
-               (i == pos_si_h1 or i == pos_si_h2 or i == pos_si_h3)) or
-              (j == pos_si_zeta2 and
-               (i == pos_si_h1 or i == pos_si_h2 or i == pos_si_h3)) or
-              (j == pos_si_zeta3 and
-               (i == pos_si_h1 or i == pos_si_h2 or i == pos_si_h3))))
+      bool IsChargedHiggsP =
+          (j == pos_si_rho1 and (i == pos_si_Gp or i == pos_si_Hp)) or
+          (j == pos_si_rho2 and (i == pos_si_Gp or i == pos_si_Hp));
+      bool IsChargedHiggsM =
+          (j == pos_si_eta1 and (i == pos_si_Gm or i == pos_si_Hm)) or
+          (j == pos_si_eta2 and (i == pos_si_Gm or i == pos_si_Hm));
+      bool IsNeutralHiggs =
+          (j == pos_si_zeta1 and
+            (i == pos_si_h1 or i == pos_si_h2 or i == pos_si_h3)) or
+          (j == pos_si_zeta2 and
+            (i == pos_si_h1 or i == pos_si_h2 or i == pos_si_h3)) or
+          (j == pos_si_zeta3 and
+            (i == pos_si_h1 or i == pos_si_h2 or i == pos_si_h3));
+
+      if (not(IsChargedHiggsP or IsChargedHiggsM or IsNeutralHiggs))
       {
         zero_element = true;
       }
