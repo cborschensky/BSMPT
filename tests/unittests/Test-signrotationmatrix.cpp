@@ -234,9 +234,9 @@ TEST_CASE("Checking sign convention of rotation matrix for CP in the Dark",
       ModelID::FChoose(ModelID::ModelIDs::CPINTHEDARK, SMConstants);
   auto nPar = modelPointer->get_nPar();
 
-  std::ifstream testData(TEST_DATA_PATH
-                         "/tests/unittests/signrotationmatrix_data/"
-                         "cpinthedark_unittest_signrotationmatrix.tsv");
+  std::ifstream testData(
+      TEST_DATA_PATH
+      "/signrotationmatrix_data/cpinthedark_unittest_signrotationmatrix.tsv");
 
   auto Check = [](auto result, auto expected)
   {
@@ -395,9 +395,9 @@ TEST_CASE("Checking sign convention of rotation matrix for CxSM",
       ModelID::FChoose(ModelID::ModelIDs::CXSM, SMConstants);
   auto nPar = modelPointer->get_nPar();
 
-  std::ifstream testData(TEST_DATA_PATH
-                         "/tests/unittests/signrotationmatrix_data/"
-                         "cxsm_unittest_signrotationmatrix.tsv");
+  std::ifstream testData(
+      TEST_DATA_PATH
+      "/signrotationmatrix_data/cxsm_unittest_signrotationmatrix.tsv");
 
   auto Check = [](auto result, auto expected)
   {
@@ -540,9 +540,9 @@ TEST_CASE("Checking sign convention of rotation matrix for N2HDM",
       ModelID::FChoose(ModelID::ModelIDs::N2HDM, SMConstants);
   auto nPar = modelPointer->get_nPar();
 
-  std::ifstream testData(TEST_DATA_PATH
-                         "/tests/unittests/signrotationmatrix_data/"
-                         "n2hdm_unittest_signrotationmatrix.tsv");
+  std::ifstream testData(
+      TEST_DATA_PATH
+      "/signrotationmatrix_data/n2hdm_unittest_signrotationmatrix.tsv");
 
   auto Check = [](auto result, auto expected)
   {
@@ -740,9 +740,9 @@ TEST_CASE("Checking sign convention of rotation matrix for R2HDM",
       ModelID::FChoose(ModelID::ModelIDs::R2HDM, SMConstants);
   auto nPar = modelPointer->get_nPar();
 
-  std::ifstream testData(TEST_DATA_PATH
-                         "/tests/unittests/signrotationmatrix_data/"
-                         "r2hdm_unittest_signrotationmatrix.tsv");
+  std::ifstream testData(
+      TEST_DATA_PATH
+      "/signrotationmatrix_data/r2hdm_unittest_signrotationmatrix.tsv");
 
   auto Check = [](auto result, auto expected)
   {
