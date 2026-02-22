@@ -463,22 +463,24 @@ TEST_CASE("Check symmetric properties of the quark tensor in the R2HDM",
               modelPointer->Get_Curvature_Quark_F2H1()));
 }
 
-TEST_CASE("Checking status_last_phase_ew flag for R2HDM (parameter point 1: not_set)", "[r2hdm]")
+TEST_CASE(
+    "Checking status_last_phase_ew flag for R2HDM (parameter point 1: not_set)",
+    "[r2hdm]")
 {
   using namespace BSMPT;
   const auto SMConstants = GetSMConstants();
   std::shared_ptr<BSMPT::Class_Potential_Origin> modelPointer =
       ModelID::FChoose(ModelID::ModelIDs::R2HDM, SMConstants);
 
-  std::vector<double> parameter_point {
-    5.5375955207727685,  // L1
-    1.2478904978288385,  // L2
-    9.5987724404849182,  // L3
-    -6.0725632765235256, // L4
-    -5.5600541951384388, // L5
-    82836.956601905214,  // m12sq
-    1.595920431324382,   // tbeta
-    1                    // yuktype
+  std::vector<double> parameter_point{
+      5.5375955207727685,  // L1
+      1.2478904978288385,  // L2
+      9.5987724404849182,  // L3
+      -6.0725632765235256, // L4
+      -5.5600541951384388, // L5
+      82836.956601905214,  // m12sq
+      1.595920431324382,   // tbeta
+      1                    // yuktype
   };
 
   modelPointer->initModel(parameter_point);
@@ -492,22 +494,24 @@ TEST_CASE("Checking status_last_phase_ew flag for R2HDM (parameter point 1: not_
   REQUIRE(output.status.status_last_phase_ew == StatusLastPhaseEW::NotSet);
 }
 
-TEST_CASE("Checking status_last_phase_ew flag for R2HDM (parameter point 2: failure)", "[r2hdm]")
+TEST_CASE(
+    "Checking status_last_phase_ew flag for R2HDM (parameter point 2: failure)",
+    "[r2hdm]")
 {
   using namespace BSMPT;
   const auto SMConstants = GetSMConstants();
   std::shared_ptr<BSMPT::Class_Potential_Origin> modelPointer =
       ModelID::FChoose(ModelID::ModelIDs::R2HDM, SMConstants);
 
-  std::vector<double> parameter_point {
-    4.0494421729309069,   // L1
-    0.27205126688781284,  // L2
-    -0.89579002860060375, // L3
-    0.47924567322065148,  // L4
-    -0.22649110841685502, // L5
-    3489.1822481468998,   // m12sq
-    14.801970917145226,   // tbeta
-    1                     // yuktype
+  std::vector<double> parameter_point{
+      4.0494421729309069,   // L1
+      0.27205126688781284,  // L2
+      -0.89579002860060375, // L3
+      0.47924567322065148,  // L4
+      -0.22649110841685502, // L5
+      3489.1822481468998,   // m12sq
+      14.801970917145226,   // tbeta
+      1                     // yuktype
   };
 
   modelPointer->initModel(parameter_point);
@@ -521,22 +525,24 @@ TEST_CASE("Checking status_last_phase_ew flag for R2HDM (parameter point 2: fail
   REQUIRE(output.status.status_last_phase_ew == StatusLastPhaseEW::Failure);
 }
 
-TEST_CASE("Checking status_last_phase_ew flag for R2HDM (parameter point 3: success)", "[r2hdm]")
+TEST_CASE(
+    "Checking status_last_phase_ew flag for R2HDM (parameter point 3: success)",
+    "[r2hdm]")
 {
   using namespace BSMPT;
   const auto SMConstants = GetSMConstants();
   std::shared_ptr<BSMPT::Class_Potential_Origin> modelPointer =
       ModelID::FChoose(ModelID::ModelIDs::R2HDM, SMConstants);
 
-  std::vector<double> parameter_point {
-    2.4368730715511919,    // L1
-    0.23759756137388874,   // L2
-    -0.054576679261842842, // L3
-    0.30028975005878483,   // L4
-    0.29727096822069576,   // L5
-    9195.6494839578772,    // m12sq
-    4.4118603522432407,    // tbeta
-    1                      // yuktype
+  std::vector<double> parameter_point{
+      2.4368730715511919,    // L1
+      0.23759756137388874,   // L2
+      -0.054576679261842842, // L3
+      0.30028975005878483,   // L4
+      0.29727096822069576,   // L5
+      9195.6494839578772,    // m12sq
+      4.4118603522432407,    // tbeta
+      1                      // yuktype
   };
 
   modelPointer->initModel(parameter_point);

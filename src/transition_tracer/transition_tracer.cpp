@@ -509,13 +509,16 @@ TransitionTracer::TransitionTracer(user_input &input)
           }
         }
 
-        // Check if the last reached phase (as in transition_history.back()) corresponds to
-        // the correct EW phase at T = 0 with the minimum as given in the model definition
-        // (from modelPointer->get_vevTreeMin())
+        // Check if the last reached phase (as in transition_history.back())
+        // corresponds to the correct EW phase at T = 0 with the minimum as
+        // given in the model definition (from modelPointer->get_vevTreeMin())
         auto p = vac.PhasesList.at(transition_history.back());
         if (p.T_low > 0. ||
             !almost_the_same(input.modelPointer->get_vevTreeMin(),
-                             p.Get(0.).point, false, 0.01, 1e-5))
+                             p.Get(0.).point,
+                             false,
+                             0.01,
+                             1e-5))
         {
           output_store.status.status_last_phase_ew = StatusLastPhaseEW::Failure;
         }

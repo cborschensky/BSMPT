@@ -188,10 +188,10 @@ enum class StatusLastPhaseEW
  * @brief Map to convert StatusLastPhaseEW to strings
  *
  */
-const std::unordered_map<StatusLastPhaseEW, std::string> StatusLastPhaseEWToString{
-    {StatusLastPhaseEW::NotSet, "not_set"},
-    {StatusLastPhaseEW::Success, "success"},
-    {StatusLastPhaseEW::Failure, "failure"}};
+const std::unordered_map<StatusLastPhaseEW, std::string>
+    StatusLastPhaseEWToString{{StatusLastPhaseEW::NotSet, "not_set"},
+                              {StatusLastPhaseEW::Success, "success"},
+                              {StatusLastPhaseEW::Failure, "failure"}};
 
 /**
  * @brief Possible transitions temperatures
