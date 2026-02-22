@@ -712,16 +712,15 @@ std::vector<double> Class_CxSM::calc_CT() const
   return parCT;
 }
 
-void Class_CxSM::FindMassBasisIndices(
-     const std::vector<double> &HiggsMasses,
-     const MatrixXd &HiggsRot)
+void Class_CxSM::FindMassBasisIndices(const std::vector<double> &HiggsMasses,
+                                      const MatrixXd &HiggsRot)
 {
   // Indices of mass eigenstates for rotation from interaction to mass basis.
   // Goldstones are already diagonal, still include a sanity check.
-  // Using temporary optional variables, later being set to the instance variables
-  // pos_G0, pos_Gp, etc.
+  // Using temporary optional variables, later being set to the instance
+  // variables pos_G0, pos_Gp, etc.
   std::optional<std::size_t> tpos_Gp, tpos_Gm, tpos_G0, tpos_h1, tpos_h2,
-                             tpos_h3;
+      tpos_h3;
 
   for (std::size_t i = 0; i < NHiggs; i++)
   // mass base index i corresponds to mass vector sorted in ascending mass
@@ -764,9 +763,10 @@ void Class_CxSM::FindMassBasisIndices(
       }
     }
     // Neutral submatrix
-    else if (std::abs(HiggsRot(i, pos_zeta1))
-             + std::abs(HiggsRot(i, pos_zeta2))
-             + std::abs(HiggsRot(i, pos_zeta3)) > ARMZeroThreshold)
+    else if (std::abs(HiggsRot(i, pos_zeta1)) +
+                 std::abs(HiggsRot(i, pos_zeta2)) +
+                 std::abs(HiggsRot(i, pos_zeta3)) >
+             ARMZeroThreshold)
     // use that mh1 < mh2 < mh3
     {
       if (not tpos_h1.has_value())
@@ -795,10 +795,9 @@ void Class_CxSM::FindMassBasisIndices(
   }
 
   // Sanity check if all position indices are set
-  if (not (tpos_G0.has_value() and tpos_Gp.has_value() and tpos_Gm.has_value()
-           and tpos_h1.has_value() and tpos_h2.has_value()
-           and tpos_h3.has_value())
-     )
+  if (not(tpos_G0.has_value() and tpos_Gp.has_value() and
+          tpos_Gm.has_value() and tpos_h1.has_value() and
+          tpos_h2.has_value() and tpos_h3.has_value()))
   {
     throw std::runtime_error("Error. Not all position indices are set.");
   }
@@ -818,17 +817,14 @@ void Class_CxSM::FindMassBasisIndices(
     {
       bool IsChargedGoldstoneP = (j == pos_i_Gp and i == pos_Gp);
       bool IsChargedGoldstoneM = (j == pos_i_Gm and i == pos_Gm);
-      bool IsNeutralGoldstone = (j == pos_i_G0 and i == pos_G0);
+      bool IsNeutralGoldstone  = (j == pos_i_G0 and i == pos_G0);
       bool IsNeutralHiggs =
-          (j == pos_zeta1 and
-            (i == pos_h1 or i == pos_h2 or i == pos_h3)) or
-          (j == pos_zeta2 and
-            (i == pos_h1 or i == pos_h2 or i == pos_h3)) or
-          (j == pos_zeta3 and
-            (i == pos_h1 or i == pos_h2 or i == pos_h3));
+          (j == pos_zeta1 and (i == pos_h1 or i == pos_h2 or i == pos_h3)) or
+          (j == pos_zeta2 and (i == pos_h1 or i == pos_h2 or i == pos_h3)) or
+          (j == pos_zeta3 and (i == pos_h1 or i == pos_h2 or i == pos_h3));
 
-      if (not(IsChargedGoldstoneP or IsChargedGoldstoneM
-              or IsNeutralGoldstone or IsNeutralHiggs))
+      if (not(IsChargedGoldstoneP or IsChargedGoldstoneM or
+              IsNeutralGoldstone or IsNeutralHiggs))
       {
         zero_element = true;
       }
@@ -964,10 +960,10 @@ void Class_CxSM::AdjustRotationMatrix()
 
   // Extract the fixed mixing angles
   double sina2 = HiggsRot(pos_h1, pos_zeta3); // +sin(a2)
-  double cosa2 = std::sqrt(1.0 - sina2*sina2);
-  alpha1 = std::asin(HiggsRot(pos_h1, pos_zeta2)/cosa2); // +sin(a1) cos(a2)
+  double cosa2 = std::sqrt(1.0 - sina2 * sina2);
+  alpha1 = std::asin(HiggsRot(pos_h1, pos_zeta2) / cosa2); // +sin(a1) cos(a2)
   alpha2 = std::asin(sina2);
-  alpha3 = std::asin(HiggsRot(pos_h2, pos_zeta3)/cosa2); // +cos(a2) sin(a3)
+  alpha3 = std::asin(HiggsRot(pos_h2, pos_zeta3) / cosa2); // +cos(a2) sin(a3)
 
   for (std::size_t i = 0; i < NHiggs; i++)
   {
