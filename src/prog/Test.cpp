@@ -30,6 +30,7 @@
 #include <vector>   // for vector
 
 // CB: added v
+#include <functional>
 #include <BSMPT/utility/NumericalDerivatives.h>
 #include <BSMPT/minimum_tracer/minimum_tracer.h>
 #include <BSMPT/models/ClassPotentialR2HDM.h>
@@ -103,153 +104,153 @@ try
       modelPointer->write();
 
       // CB: v
-      double eps = 0.01;
-      std::vector<double> vevTree = modelPointer->MinimizeOrderVEV(modelPointer->get_vevTreeMin());
-
-      // auto VTree0 = [&](std::vector<double> x) {
-      //   return modelPointer->VTree(x, 0, false);
-      // };
-      // auto VEff0 = [&](std::vector<double> x) {
-      //   return modelPointer->VEff(x, 0, 0, 0);
-      // };
-      // auto VEff1 = [&](std::vector<double> x) {
-      //   return modelPointer->VEff(x, 0, 0, 1);
-      // };
-      // std::vector<std::vector<double>> hessenum0 = HessianNumerical(vevTree, VTree0, eps);
-      // std::vector<std::vector<double>> hessenum10 = HessianNumerical(vevTree, VEff0, eps);
-      // std::vector<std::vector<double>> hessenum1 = HessianNumerical(vevTree, VEff1, eps);
-
-
-      // std::function<double(std::vector<double>)> V0  = std::bind(&BSMPT::Class_Potential_Origin::VTree, modelPointer, std::placeholders::_1, 0, false);
-      // std::function<double(std::vector<double>)> V10 = std::bind(&BSMPT::Class_Potential_Origin::VEff, modelPointer, std::placeholders::_1, 0, 0, 0);
-      // std::function<double(std::vector<double>)> V1  = std::bind(&BSMPT::Class_Potential_Origin::VEff, modelPointer, std::placeholders::_1, 0, 0, 1);
-      std::function<double(std::vector<double>)> V0  = std::bind(&BSMPT::Class_Potential_Origin::VTree, std::ref(modelPointer), std::placeholders::_1, 0, false);
-      std::function<double(std::vector<double>)> V10 = std::bind(&BSMPT::Class_Potential_Origin::VEff, std::ref(modelPointer), std::placeholders::_1, 0, 0, 0);
-      std::function<double(std::vector<double>)> V1  = std::bind(&BSMPT::Class_Potential_Origin::VEff, std::ref(modelPointer), std::placeholders::_1, 0, 0, 1);
-      
-      std::vector<std::vector<double>> hessenum0 = HessianNumerical(vevTree, V0, eps);
-      std::vector<std::vector<double>> hessenum10 = HessianNumerical(vevTree, V10, eps);
-      std::vector<std::vector<double>> hessenum1 = HessianNumerical(vevTree, V1, eps);
-
-
-      auto MassMatrix = modelPointer->HiggsMassMatrix(vevTree, 0, 0);
-
-      std::size_t NHiggs = modelPointer->get_NHiggs();
-
-      std::cout << "HiggsMassMatrix:" << std::endl;
-      for (std::size_t i = 0; i < NHiggs; ++i) {
-        for (std::size_t j = 0; j < NHiggs; ++j) {
-          std::cout << MassMatrix(i, j) << " ";
-        }
-        std::cout << std::endl;
-      }
-      std::cout << std::endl;
-
-/*
-      std::cout << "Hesse VTree:" << std::endl;
-      for (std::size_t i = 0; i < NHiggs; ++i) {
-        for (std::size_t j = 0; j < NHiggs; ++j) {
-          std::cout << hessenum0[i][j] << " ";
-        }
-        std::cout << std::endl;
-      }
-      std::cout << std::endl;
-
-      std::cout << "Hesse VEff 0:" << std::endl;
-      for (std::size_t i = 0; i < NHiggs; ++i) {
-        for (std::size_t j = 0; j < NHiggs; ++j) {
-          std::cout << hessenum10[i][j] << " ";
-        }
-        std::cout << std::endl;
-      }
-      std::cout << std::endl;
-
-      std::cout << "Hesse VEff 1:" << std::endl;
-      for (std::size_t i = 0; i < NHiggs; ++i) {
-        for (std::size_t j = 0; j < NHiggs; ++j) {
-          std::cout << hessenum1[i][j] << " ";
-        }
-        std::cout << std::endl;
-      }
-      std::cout << std::endl;
-*/
-
-      // for (std::size_t i = 0; i < NHiggs; ++i) {
-      //   for (std::size_t j = 0; j < NHiggs; ++j) {
-      //     MassMatrix(i, j) = hessenum1[i][j];
-      //   }
-      // }
-
-      SelfAdjointEigenSolver<MatrixXd> es(MassMatrix, EigenvaluesOnly);
-      auto EV = es.eigenvalues();
-      for (std::size_t i = 0; i < NHiggs; ++i) {
-        if (EV[i] < 0) {
-          EV[i] = EV[i]/std::abs(EV[i])*std::sqrt(std::abs(EV[i]));
-        } else {
-          EV[i] = std::sqrt(EV[i]);
-        }
-      }
-
-      std::cout << "EV=" << EV << std::endl;
-
-      // Test at tree-level
-      modelPointer->SetUseTreeLevel(true);
-      std::shared_ptr<MinimumTracer> mintracer(new MinimumTracer(modelPointer, 1 + 2 + 4, true));
-      auto glob_min_0 = mintracer->ConvertToVEVDim(mintracer->GetGlobalMinimum(0));
-
-      // Test at 1-loop effective
-      modelPointer->SetUseTreeLevel(false);
-      mintracer.reset(new MinimumTracer(modelPointer, 1 + 2 + 4, true));
-      auto glob_min = mintracer->ConvertToVEVDim(mintracer->GetGlobalMinimum(0));
-
-      std::cout << "glob_min_0(tree-level)=" << glob_min_0 << std::endl;
-      std::cout << std::sqrt(glob_min_0[0]*glob_min_0[0] + glob_min_0[1]*glob_min_0[1] + glob_min_0[2]*glob_min_0[2] + glob_min_0[3]*glob_min_0[3]) << std::endl;
-
-      std::cout << "glob_min(1-loop)=" << glob_min << std::endl;
-      std::cout << std::sqrt(glob_min[0]*glob_min[0] + glob_min[1]*glob_min[1] + glob_min[2]*glob_min[2] + glob_min[3]*glob_min[3]) << std::endl;
-
-      std::vector<double> vevGlob = modelPointer->MinimizeOrderVEV(glob_min);
-
-      std::vector<std::vector<double>> hessenum1Glob = HessianNumerical(vevGlob, V1, eps);
-      for (std::size_t i = 0; i < NHiggs; ++i) {
-        for (std::size_t j = 0; j < NHiggs; ++j) {
-          MassMatrix(i, j) = hessenum1Glob[i][j];
-        }
-      }
-
-      // std::cout << "hessenum1Glob:" << std::endl;
-      // for (std::size_t i = 0; i < NHiggs; ++i) {
-      //   for (std::size_t j = 0; j < NHiggs; ++j) {
-      //     std::cout << MassMatrix(i, j) << " ";
-      //   }
-      //   std::cout << std::endl;
-      // }
-      // std::cout << std::endl;
-
-      std::cout << std::endl;
-
-      SelfAdjointEigenSolver<MatrixXd> esGlob(MassMatrix, EigenvaluesOnly);
-      EV = esGlob.eigenvalues();
-      for (std::size_t i = 0; i < NHiggs; ++i) {
-        if (EV[i] < 0) {
-          EV[i] = EV[i]/std::abs(EV[i])*std::sqrt(std::abs(EV[i]));
-        } else {
-          EV[i] = std::sqrt(EV[i]);
-        }
-      }
-
-      std::cout << "EV=" << EV << std::endl;
-
-      int ewsr_status = mintracer->IsThereEWSymmetryRestoration();
-      auto status_ewsr = mintracer->GetStatusEWSR(ewsr_status);
-      std::cout << "EWSR status=" << ewsr_status << ", " << status_ewsr << std::endl;
-      // ewsr_status:
-      //   3: EWSR
-      //   2: no EWSR (i.e. potential is BFB, but minimum is not at the origin, or what does this mean?)
-      //   1, 0: higher orders needed/not conclusive
-      //  -1: not bounded from below at high T -> no EWSR
-
-      std::cout << std::endl;
+//       double eps = 0.01;
+//       std::vector<double> vevTree = modelPointer->MinimizeOrderVEV(modelPointer->get_vevTreeMin());
+// 
+//       // auto VTree0 = [&](std::vector<double> x) {
+//       //   return modelPointer->VTree(x, 0, false);
+//       // };
+//       // auto VEff0 = [&](std::vector<double> x) {
+//       //   return modelPointer->VEff(x, 0, 0, 0);
+//       // };
+//       // auto VEff1 = [&](std::vector<double> x) {
+//       //   return modelPointer->VEff(x, 0, 0, 1);
+//       // };
+//       // std::vector<std::vector<double>> hessenum0 = HessianNumerical(vevTree, VTree0, eps);
+//       // std::vector<std::vector<double>> hessenum10 = HessianNumerical(vevTree, VEff0, eps);
+//       // std::vector<std::vector<double>> hessenum1 = HessianNumerical(vevTree, VEff1, eps);
+// 
+// 
+//       // std::function<double(std::vector<double>)> V0  = std::bind(&BSMPT::Class_Potential_Origin::VTree, modelPointer, std::placeholders::_1, 0, false);
+//       // std::function<double(std::vector<double>)> V10 = std::bind(&BSMPT::Class_Potential_Origin::VEff, modelPointer, std::placeholders::_1, 0, 0, 0);
+//       // std::function<double(std::vector<double>)> V1  = std::bind(&BSMPT::Class_Potential_Origin::VEff, modelPointer, std::placeholders::_1, 0, 0, 1);
+//       std::function<double(std::vector<double>)> V0  = std::bind(&BSMPT::Class_Potential_Origin::VTree, std::ref(modelPointer), std::placeholders::_1, 0, false);
+//       std::function<double(std::vector<double>)> V10 = std::bind(&BSMPT::Class_Potential_Origin::VEff, std::ref(modelPointer), std::placeholders::_1, 0, 0, 0);
+//       std::function<double(std::vector<double>)> V1  = std::bind(&BSMPT::Class_Potential_Origin::VEff, std::ref(modelPointer), std::placeholders::_1, 0, 0, 1);
+//       
+//       std::vector<std::vector<double>> hessenum0 = HessianNumerical(vevTree, V0, eps);
+//       std::vector<std::vector<double>> hessenum10 = HessianNumerical(vevTree, V10, eps);
+//       std::vector<std::vector<double>> hessenum1 = HessianNumerical(vevTree, V1, eps);
+// 
+// 
+//       auto MassMatrix = modelPointer->HiggsMassMatrix(vevTree, 0, 0);
+// 
+//       std::size_t NHiggs = modelPointer->get_NHiggs();
+// 
+//       std::cout << "HiggsMassMatrix:" << std::endl;
+//       for (std::size_t i = 0; i < NHiggs; ++i) {
+//         for (std::size_t j = 0; j < NHiggs; ++j) {
+//           std::cout << MassMatrix(i, j) << " ";
+//         }
+//         std::cout << std::endl;
+//       }
+//       std::cout << std::endl;
+// 
+// /*
+//       std::cout << "Hesse VTree:" << std::endl;
+//       for (std::size_t i = 0; i < NHiggs; ++i) {
+//         for (std::size_t j = 0; j < NHiggs; ++j) {
+//           std::cout << hessenum0[i][j] << " ";
+//         }
+//         std::cout << std::endl;
+//       }
+//       std::cout << std::endl;
+// 
+//       std::cout << "Hesse VEff 0:" << std::endl;
+//       for (std::size_t i = 0; i < NHiggs; ++i) {
+//         for (std::size_t j = 0; j < NHiggs; ++j) {
+//           std::cout << hessenum10[i][j] << " ";
+//         }
+//         std::cout << std::endl;
+//       }
+//       std::cout << std::endl;
+// 
+//       std::cout << "Hesse VEff 1:" << std::endl;
+//       for (std::size_t i = 0; i < NHiggs; ++i) {
+//         for (std::size_t j = 0; j < NHiggs; ++j) {
+//           std::cout << hessenum1[i][j] << " ";
+//         }
+//         std::cout << std::endl;
+//       }
+//       std::cout << std::endl;
+// */
+// 
+//       // for (std::size_t i = 0; i < NHiggs; ++i) {
+//       //   for (std::size_t j = 0; j < NHiggs; ++j) {
+//       //     MassMatrix(i, j) = hessenum1[i][j];
+//       //   }
+//       // }
+// 
+//       SelfAdjointEigenSolver<MatrixXd> es(MassMatrix, EigenvaluesOnly);
+//       auto EV = es.eigenvalues();
+//       for (std::size_t i = 0; i < NHiggs; ++i) {
+//         if (EV[i] < 0) {
+//           EV[i] = EV[i]/std::abs(EV[i])*std::sqrt(std::abs(EV[i]));
+//         } else {
+//           EV[i] = std::sqrt(EV[i]);
+//         }
+//       }
+// 
+//       std::cout << "EV=" << EV << std::endl;
+// 
+//       // Test at tree-level
+//       modelPointer->SetUseTreeLevel(true);
+//       std::shared_ptr<MinimumTracer> mintracer(new MinimumTracer(modelPointer, 1 + 2 + 4, true));
+//       auto glob_min_0 = mintracer->ConvertToVEVDim(mintracer->GetGlobalMinimum(0));
+// 
+//       // Test at 1-loop effective
+//       modelPointer->SetUseTreeLevel(false);
+//       mintracer.reset(new MinimumTracer(modelPointer, 1 + 2 + 4, true));
+//       auto glob_min = mintracer->ConvertToVEVDim(mintracer->GetGlobalMinimum(0));
+// 
+//       std::cout << "glob_min_0(tree-level)=" << glob_min_0 << std::endl;
+//       std::cout << std::sqrt(glob_min_0[0]*glob_min_0[0] + glob_min_0[1]*glob_min_0[1] + glob_min_0[2]*glob_min_0[2] + glob_min_0[3]*glob_min_0[3]) << std::endl;
+// 
+//       std::cout << "glob_min(1-loop)=" << glob_min << std::endl;
+//       std::cout << std::sqrt(glob_min[0]*glob_min[0] + glob_min[1]*glob_min[1] + glob_min[2]*glob_min[2] + glob_min[3]*glob_min[3]) << std::endl;
+// 
+//       std::vector<double> vevGlob = modelPointer->MinimizeOrderVEV(glob_min);
+// 
+//       std::vector<std::vector<double>> hessenum1Glob = HessianNumerical(vevGlob, V1, eps);
+//       for (std::size_t i = 0; i < NHiggs; ++i) {
+//         for (std::size_t j = 0; j < NHiggs; ++j) {
+//           MassMatrix(i, j) = hessenum1Glob[i][j];
+//         }
+//       }
+// 
+//       // std::cout << "hessenum1Glob:" << std::endl;
+//       // for (std::size_t i = 0; i < NHiggs; ++i) {
+//       //   for (std::size_t j = 0; j < NHiggs; ++j) {
+//       //     std::cout << MassMatrix(i, j) << " ";
+//       //   }
+//       //   std::cout << std::endl;
+//       // }
+//       // std::cout << std::endl;
+// 
+//       std::cout << std::endl;
+// 
+//       SelfAdjointEigenSolver<MatrixXd> esGlob(MassMatrix, EigenvaluesOnly);
+//       EV = esGlob.eigenvalues();
+//       for (std::size_t i = 0; i < NHiggs; ++i) {
+//         if (EV[i] < 0) {
+//           EV[i] = EV[i]/std::abs(EV[i])*std::sqrt(std::abs(EV[i]));
+//         } else {
+//           EV[i] = std::sqrt(EV[i]);
+//         }
+//       }
+// 
+//       std::cout << "EV=" << EV << std::endl;
+// 
+//       int ewsr_status = mintracer->IsThereEWSymmetryRestoration();
+//       auto status_ewsr = mintracer->GetStatusEWSR(ewsr_status);
+//       std::cout << "EWSR status=" << ewsr_status << ", " << status_ewsr << std::endl;
+//       // ewsr_status:
+//       //   3: EWSR
+//       //   2: no EWSR (i.e. potential is BFB, but minimum is not at the origin, or what does this mean?)
+//       //   1, 0: higher orders needed/not conclusive
+//       //  -1: not bounded from below at high T -> no EWSR
+// 
+//       std::cout << std::endl;
       // CB: ^
 
       std::vector<double> dummy;
