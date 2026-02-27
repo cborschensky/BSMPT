@@ -38,6 +38,7 @@ Class_Potential_R2HDM::Class_Potential_R2HDM(const ISMConstants &smConstants)
   nPar   += 1; // CB: add renormalization scale as an input parameter
   nPar   += 1; // CB: add t parameter as an input parameter
   nPar   += 1; // CB: add VEV as actual input parameter
+  nPar   += 1; // CB: we need the OS tanBeta to obtain the OS Yukawa couplings correctly, otherwise it's mixed
   nParCT = 11;
 
   nVEV = 4;
@@ -168,7 +169,8 @@ void Class_Potential_R2HDM::ReadAndSet(const std::string &linestr,
   // for (int k = 1; k <= 8; k++)
   // for (int k = 1; k <= 9; k++) // CB: add renormalization scale as an input parameter
   // for (int k = 1; k <= 10; k++) // CB: add renormalization scale as an input parameter and t parameter
-  for (int k = 1; k <= 11; k++) // CB: add renormalization scale as an input parameter and t parameter and VEV
+  // for (int k = 1; k <= 11; k++) // CB: add renormalization scale as an input parameter and t parameter and VEV
+  for (int k = 1; k <= 12; k++) // CB: add renormalization scale as an input parameter and t parameter and VEV, and OS tanBeta
   {
     ss >> tmp;
     if (k == 1)
@@ -193,14 +195,19 @@ void Class_Potential_R2HDM::ReadAndSet(const std::string &linestr,
       t_ren_par = tmp;
     else if (k == 11) // CB: add VEV as actual input parameter
       par[10] = tmp;
+    else if (k == 12) // CB: we need the OS tanBeta to obtain the OS Yukawa couplings correctly, otherwise it's mixed
+      par[11] = tmp;
   }
 
   //	double sa = std::sin(alpha);
   //	double ca = std::cos(alpha);
-  C_CosBetaSquared = 1.0 / (1 + TanBeta * TanBeta);
-  C_CosBeta        = sqrt(C_CosBetaSquared);
-  C_SinBetaSquared = TanBeta * TanBeta * C_CosBetaSquared;
-  C_SinBeta        = sqrt(C_SinBetaSquared);
+
+  // CB: comment this out, this is not needed here
+  // C_CosBetaSquared = 1.0 / (1 + TanBeta * TanBeta);
+  // C_CosBeta        = sqrt(C_CosBetaSquared);
+  // C_SinBetaSquared = TanBeta * TanBeta * C_CosBetaSquared;
+  // C_SinBeta        = sqrt(C_SinBetaSquared);
+
   //	L1 =1.0 / (SMConstants.C_vev0 * SMConstants.C_vev0 * C_CosBeta *
   // C_CosBeta)* (ca * ca * MH * MH +
   // sa * sa * Mh * Mh- RealMMix * C_SinBeta / C_CosBeta); 	L2 =1.0 /
@@ -235,6 +242,8 @@ void Class_Potential_R2HDM::set_gen(const std::vector<double> &par)
 {
 
   double VEVin = par[10]; // CB: par[10] is the input VEV
+
+  double TanBetaOS = par[11]; // CB: par[11] is the OS tanBeta value required for the Yukawas
 
   // CB: recalculate all SM constants, since they are basically all VEV dependent
   // CB: do I really have to do that? I am not sure if I mess something up... let's assume these here are just all the OS values; just change the VEV, since this is used in multiple places
@@ -287,7 +296,8 @@ void Class_Potential_R2HDM::set_gen(const std::vector<double> &par)
   L4               = par[3];
   RL5              = par[4];
   RealMMix         = par[5];
-  TanBeta          = par[6];
+  // TanBeta          = par[6];
+  TanBeta          = TanBetaOS; // CB: for now, i.e. for the Yukawas, use the OS tanBeta value, later change to the (possibly) MSbar value
   beta             = std::atan(TanBeta);
   Type             = static_cast<int>(par[7]);
   C_CosBetaSquared = 1.0 / (1 + TanBeta * TanBeta);
@@ -331,6 +341,19 @@ void Class_Potential_R2HDM::set_gen(const std::vector<double> &par)
   else
   {
     CTempC1 += 12.0 / 48.0 * cb * cb;
+  }
+
+  // CB: now this is the tanBeta value of MSbar (if the scheme is changed)
+  TanBeta          = par[6];
+  beta             = std::atan(TanBeta);
+  C_CosBetaSquared = 1.0 / (1 + TanBeta * TanBeta);
+  C_CosBeta        = sqrt(C_CosBetaSquared);
+  C_SinBetaSquared = TanBeta * TanBeta * C_CosBetaSquared;
+  C_SinBeta        = sqrt(C_SinBetaSquared);
+
+  if (TanBeta < 0) // for beta in 4th quadrant
+  {
+    C_SinBeta *= -1;
   }
 
   // CB: reordered a bit so that the MSbar VEV is used only starting from here, but not in any of the quantities related to the Yukawa or gauge sectors
