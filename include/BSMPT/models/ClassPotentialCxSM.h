@@ -120,8 +120,8 @@ public:
    * 0   1   2   3      4      5
    * Gp, Gm, G0, zeta1, zeta2, zeta3
    */
-  const std::size_t pos_i_Gp = 0, pos_i_Gm = 1, pos_i_G0 = 2,
-                    pos_zeta1 = 3, pos_zeta2 = 4, pos_zeta3 = 5;
+  const std::size_t pos_i_Gp = 0, pos_i_Gm = 1, pos_i_G0 = 2, pos_zeta1 = 3,
+                    pos_zeta2 = 4, pos_zeta3 = 5;
 
   /**
    * Helper function to determine mass indices of rotation matrix

@@ -333,7 +333,7 @@ using boost_cubic_b_spline = boost::math::cubic_b_spline<T>;
  */
 bool almost_the_same(const double &a,
                      const double &b,
-                     const double &rel_precision = 0.01,
+                     const double &rel_precision,
                      const double &num_zero = 1e-10);
 
 /**
@@ -347,10 +347,9 @@ bool almost_the_same(const double &a,
  * @return true if a and b are almost the same and false if not
  */
 bool almost_the_same(const std::complex<double> &a,
-		     const std::complex<double> &b,
-                     const double &rel_precision = 0.01,
-		     const double &num_zero = 1e-10);
-
+                     const std::complex<double> &b,
+                     const double &rel_precision,
+                     const double &num_zero = 1e-10);
 
 /**
  * @brief almost_the_same
@@ -366,8 +365,8 @@ bool almost_the_same(const std::complex<double> &a,
  */
 bool almost_the_same(const std::vector<double> &a,
                      const std::vector<double> &b,
-                     const bool &allow_for_sign_flip = false,
-                     const double &rel_precision = 0.01,
+                     const bool &allow_for_sign_flip,
+                     const double &rel_precision,
                      const double &num_zero = 1e-10);
 
 } // namespace BSMPT

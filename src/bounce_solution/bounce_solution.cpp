@@ -8,7 +8,7 @@
  */
 
 #include <BSMPT/bounce_solution/bounce_solution.h>
-
+#include <BSMPT/utility/asciiplotter/asciiplotter.h>
 namespace BSMPT
 {
 
@@ -134,9 +134,9 @@ std::vector<double> BounceSolution::TransformIntoOptimalDiscreteSymmetry(
 
 void BounceSolution::GWInitialScan()
 {
-  if (Tc < 0)
+  if ((Tc < 0) or (Tc == phase_pair.T_low))
   {
-    // Transition is never viable
+    // Transition is never viable or coexphase is a single point.
     return;
   }
 
@@ -287,7 +287,7 @@ void BounceSolution::CalculateActionAt(double T, bool smart)
 
 void BounceSolution::GWSecondaryScan()
 {
-  if (SolutionList.size() == 0)
+  if (SolutionList.empty())
   {
     Logger::Write(LoggingLevel::BounceDetailed,
                   "No solution was found during the initial scan.\n Abort!\n");

@@ -620,8 +620,7 @@ public:
    * @param j
    * @return HiggsRotationMatrix[i][j]
    */
-  double get_HiggsRotationMatrix(std::size_t i,
-                                 std::size_t j) const
+  double get_HiggsRotationMatrix(std::size_t i, std::size_t j) const
   {
     return HiggsRotationMatrix.at(i).at(j);
   }
@@ -1018,7 +1017,8 @@ public:
   Eigen::MatrixXcd LeptonMassMatrix(const std::vector<double> &v) const;
 
   /**
-   * Zero threshold used for double precision comparisons in AdjustRotationMatrix()
+   * Zero threshold used for double precision comparisons in
+   * AdjustRotationMatrix()
    */
   const double ARMZeroThreshold = 1e-5;
   /**

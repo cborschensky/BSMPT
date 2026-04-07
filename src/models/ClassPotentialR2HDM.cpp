@@ -715,12 +715,12 @@ std::vector<double> Class_Potential_R2HDM::calc_CT() const
 }
 
 void Class_Potential_R2HDM::FindMassBasisIndices(
-     const std::vector<double> &HiggsMasses,
-     const MatrixXd &HiggsRot)
+    const std::vector<double> &HiggsMasses,
+    const MatrixXd &HiggsRot)
 {
   // Indices of mass eigenstates for rotation from interaction to mass basis.
   std::optional<std::size_t> tpos_Gp, tpos_Gm, tpos_Hp, tpos_Hm, tpos_G0,
-                             tpos_A, tpos_H, tpos_h;
+      tpos_A, tpos_H, tpos_h;
 
   // higgsbasis = {rho1, eta1, rho2, eta2, zeta1, psi1, zeta2, psi2}
   for (std::size_t i = 0; i < NHiggs; i++)
@@ -807,11 +807,10 @@ void Class_Potential_R2HDM::FindMassBasisIndices(
   }
 
   // Sanity check if all position indices are set
-  if (not (tpos_Gp.has_value() and tpos_Gm.has_value() and tpos_Hp.has_value()
-           and tpos_Hm.has_value() and tpos_G0.has_value()
-           and tpos_A.has_value() and tpos_H.has_value()
-           and tpos_h.has_value())
-     )
+  if (not(tpos_Gp.has_value() and tpos_Gm.has_value() and
+          tpos_Hp.has_value() and tpos_Hm.has_value() and
+          tpos_G0.has_value() and tpos_A.has_value() and tpos_H.has_value() and
+          tpos_h.has_value()))
   {
     throw std::runtime_error("Error. Not all position indices are set.");
   }
@@ -821,9 +820,9 @@ void Class_Potential_R2HDM::FindMassBasisIndices(
   pos_Hp = tpos_Hp.value();
   pos_Hm = tpos_Hm.value();
   pos_G0 = tpos_G0.value();
-  pos_A = tpos_A.value();
-  pos_H = tpos_H.value();
-  pos_h = tpos_h.value();
+  pos_A  = tpos_A.value();
+  pos_H  = tpos_H.value();
+  pos_h  = tpos_h.value();
 
   // check if all other elements of rotation matrix are zero
   bool zero_element = false;
@@ -831,14 +830,19 @@ void Class_Potential_R2HDM::FindMassBasisIndices(
   {
     for (std::size_t j = 0; j < NHiggs; j++)
     {
-      if (not((j == pos_rho1 and (i == pos_Gp or i == pos_Hp)) or
-              (j == pos_eta1 and (i == pos_Gm or i == pos_Hm)) or
-              (j == pos_zeta1 and (i == pos_h or i == pos_H)) or
-              (j == pos_psi1 and (i == pos_G0 or i == pos_A)) or
-              (j == pos_rho2 and (i == pos_Gp or i == pos_Hp)) or
-              (j == pos_eta2 and (i == pos_Gm or i == pos_Hm)) or
-              (j == pos_zeta2 and (i == pos_h or i == pos_H)) or
-              (j == pos_psi2 and (i == pos_G0 or i == pos_A))))
+      bool IsChargedHiggsP = (j == pos_rho1 and (i == pos_Gp or i == pos_Hp)) or
+                             (j == pos_rho2 and (i == pos_Gp or i == pos_Hp));
+      bool IsChargedHiggsM = (j == pos_eta1 and (i == pos_Gm or i == pos_Hm)) or
+                             (j == pos_eta2 and (i == pos_Gm or i == pos_Hm));
+      bool IsNeutralHiggsCPE =
+          (j == pos_zeta1 and (i == pos_h or i == pos_H)) or
+          (j == pos_zeta2 and (i == pos_h or i == pos_H));
+      bool IsNeutralHiggsCPO =
+          (j == pos_psi1 and (i == pos_G0 or i == pos_A)) or
+          (j == pos_psi2 and (i == pos_G0 or i == pos_A));
+
+      if (not(IsChargedHiggsP or IsChargedHiggsM or IsNeutralHiggsCPE or
+              IsNeutralHiggsCPO))
       {
         zero_element = true;
       }

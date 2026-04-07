@@ -1266,12 +1266,12 @@ std::vector<double> Class_Potential_CPintheDark::calc_CT() const
 }
 
 void Class_Potential_CPintheDark::FindMassBasisIndices(
-     const std::vector<double> &HiggsMasses,
-     const MatrixXd &HiggsRot)
+    const std::vector<double> &HiggsMasses,
+    const MatrixXd &HiggsRot)
 {
   // Indices of mass eigenstates for rotation from interaction to mass basis
   std::optional<std::size_t> tpos_Gp, tpos_Gm, tpos_Hp, tpos_Hm, tpos_HSM,
-                             tpos_G0, tpos_h1, tpos_h2, tpos_h3;
+      tpos_G0, tpos_h1, tpos_h2, tpos_h3;
 
   // basis = {rho1, eta1, rho2, eta2, zeta1, psi1, zeta2, psi2, rhoS}
   // the rotation matrix is diagonal besides for the neutral dark scalars
@@ -1380,24 +1380,23 @@ void Class_Potential_CPintheDark::FindMassBasisIndices(
   }
 
   // Sanity check if all position indices are set
-  if (not (tpos_Gp.has_value() and tpos_Gm.has_value() and tpos_Hp.has_value()
-           and tpos_Hm.has_value() and tpos_HSM.has_value()
-           and tpos_G0.has_value() and tpos_h1.has_value()
-           and tpos_h2.has_value() and tpos_h3.has_value())
-     )
+  if (not(tpos_Gp.has_value() and tpos_Gm.has_value() and
+          tpos_Hp.has_value() and tpos_Hm.has_value() and
+          tpos_HSM.has_value() and tpos_G0.has_value() and
+          tpos_h1.has_value() and tpos_h2.has_value() and tpos_h3.has_value()))
   {
     throw std::runtime_error("Error. Not all position indices are set.");
   }
 
-  pos_Gp = tpos_Gp.value();
-  pos_Gm = tpos_Gm.value();
-  pos_Hp = tpos_Hp.value();
-  pos_Hm = tpos_Hm.value();
+  pos_Gp  = tpos_Gp.value();
+  pos_Gm  = tpos_Gm.value();
+  pos_Hp  = tpos_Hp.value();
+  pos_Hm  = tpos_Hm.value();
   pos_HSM = tpos_HSM.value();
-  pos_G0 = tpos_G0.value();
-  pos_h1 = tpos_h1.value();
-  pos_h2 = tpos_h2.value();
-  pos_h3 = tpos_h3.value();
+  pos_G0  = tpos_G0.value();
+  pos_h1  = tpos_h1.value();
+  pos_h2  = tpos_h2.value();
+  pos_h3  = tpos_h3.value();
 
   // check if all other elements of rotation matrix are zero
   bool zero_element = false;
@@ -1405,18 +1404,19 @@ void Class_Potential_CPintheDark::FindMassBasisIndices(
   {
     for (std::size_t j = 0; j < NHiggs; j++)
     {
-      if (not((j == pos_rho1 and i == pos_Gp) or
-              (j == pos_eta1 and i == pos_Gm) or
-              (j == pos_rho2 and i == pos_Hp) or
-              (j == pos_eta2 and i == pos_Hm) or
-              (j == pos_zeta1 and i == pos_HSM) or
-              (j == pos_psi1 and i == pos_G0) or
-              (j == pos_zeta2 and
-               (i == pos_h1 or i == pos_h2 or i == pos_h3)) or
-              (j == pos_psi2 and
-               (i == pos_h1 or i == pos_h2 or i == pos_h3)) or
-              (j == pos_rhoS and
-               (i == pos_h1 or i == pos_h2 or i == pos_h3))))
+      bool IsChargedHiggsP =
+          (j == pos_rho1 and i == pos_Gp) or (j == pos_rho2 and i == pos_Hp);
+      bool IsChargedHiggsM =
+          (j == pos_eta1 and i == pos_Gm) or (j == pos_eta2 and i == pos_Hm);
+      bool IsNeutralSMHiggs   = (j == pos_zeta1 and i == pos_HSM);
+      bool IsNeutralGoldstone = (j == pos_psi1 and i == pos_G0);
+      bool IsNeutralDarkHiggs =
+          (j == pos_zeta2 and (i == pos_h1 or i == pos_h2 or i == pos_h3)) or
+          (j == pos_psi2 and (i == pos_h1 or i == pos_h2 or i == pos_h3)) or
+          (j == pos_rhoS and (i == pos_h1 or i == pos_h2 or i == pos_h3));
+
+      if (not(IsChargedHiggsP or IsChargedHiggsM or IsNeutralSMHiggs or
+              IsNeutralGoldstone or IsNeutralDarkHiggs))
       {
         zero_element = true;
       }
@@ -1533,10 +1533,10 @@ void Class_Potential_CPintheDark::AdjustRotationMatrix()
 
   // Extract the fixed mixing angles
   double sina2 = HiggsRot(pos_h1, pos_rhoS); // +sin(a2)
-  double cosa2 = std::sqrt(1.0 - sina2*sina2);
-  alpha1 = std::asin(HiggsRot(pos_h1, pos_zeta2)/cosa2); // +sin(a1) cos(a2)
+  double cosa2 = std::sqrt(1.0 - sina2 * sina2);
+  alpha1 = std::asin(HiggsRot(pos_h1, pos_zeta2) / cosa2); // +sin(a1) cos(a2)
   alpha2 = std::asin(sina2);
-  alpha3 = std::asin(HiggsRot(pos_h2, pos_rhoS)/cosa2); // +cos(a2) sin(a3)
+  alpha3 = std::asin(HiggsRot(pos_h2, pos_rhoS) / cosa2); // +cos(a2) sin(a3)
 
   for (std::size_t i = 0; i < NHiggs; i++)
   {

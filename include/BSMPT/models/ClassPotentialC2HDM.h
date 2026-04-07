@@ -130,9 +130,8 @@ public:
    * 0     1     2     3     4      5     6      7
    * rho1, eta1, rho2, eta2, zeta1, psi1, zeta2, psi2
    */
-  const std::size_t pos_rho1 = 0, pos_eta1 = 1, pos_rho2 = 2,
-                    pos_eta2 = 3, pos_zeta1 = 4, pos_psi1 = 5,
-                    pos_zeta2 = 6, pos_psi2 = 7;
+  const std::size_t pos_rho1 = 0, pos_eta1 = 1, pos_rho2 = 2, pos_eta2 = 3,
+                    pos_zeta1 = 4, pos_psi1 = 5, pos_zeta2 = 6, pos_psi2 = 7;
 
   /*
    * C2HDM semi-interaction basis (neutral Goldstone rotated out)
@@ -152,17 +151,23 @@ public:
   void FindMassBasisIndices(const std::vector<double> &HiggsMasses,
                             const Eigen::MatrixXd &HiggsRot);
   /**
-   * Helper function to determine mass indices of "semi-interaction" rotation matrix
+   * Helper function to determine mass indices of "semi-interaction" rotation
+   * matrix
    * @param HiggsMasses : vector with squared Higgs masses allocated
    *                      in AdjustRotationMatrix
    * @param HiggsRot : rotation matrix from semi-interaction to mass
    *                   basis as calculated in AdjustRotationMatrix
    * @return tuple with seven indices of the fields {Gp, Gm, Hp, Hm, h1, h2, h3}
    */
-  std::tuple<std::size_t, std::size_t, std::size_t, std::size_t,
-             std::size_t, std::size_t, std::size_t>
-             FindSemiMassBasisIndices(const std::vector<double> &HiggsMasses,
-                                      const Eigen::MatrixXd &HiggsRot);
+  std::tuple<std::size_t,
+             std::size_t,
+             std::size_t,
+             std::size_t,
+             std::size_t,
+             std::size_t,
+             std::size_t>
+  FindSemiMassBasisIndices(const std::vector<double> &HiggsMasses,
+                           const Eigen::MatrixXd &HiggsRot);
 
   void AdjustRotationMatrix() override;
   void TripleHiggsCouplings() override;

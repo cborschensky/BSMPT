@@ -117,9 +117,9 @@ public:
    * 0     1     2     3     4      5     6      7     8
    * rho1, eta1, rho2, eta2, zeta1, psi1, zeta2, psi2, rhoS
    */
-  const std::size_t pos_rho1 = 0, pos_eta1 = 1, pos_rho2 = 2,
-                    pos_eta2 = 3, pos_zeta1 = 4, pos_psi1 = 5,
-                    pos_zeta2 = 6, pos_psi2 = 7, pos_rhoS = 8;
+  const std::size_t pos_rho1 = 0, pos_eta1 = 1, pos_rho2 = 2, pos_eta2 = 3,
+                    pos_zeta1 = 4, pos_psi1 = 5, pos_zeta2 = 6, pos_psi2 = 7,
+                    pos_rhoS = 8;
 
   /**
    * Helper function to determine mass indices of rotation matrix
