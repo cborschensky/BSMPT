@@ -1,6 +1,8 @@
-// Copyright (C) 2018  Philipp Basler and Margarete Mühlleitner
-// SPDX-FileCopyrightText: 2021 Philipp Basler, Margarete Mühlleitner and Jonas
-// Müller
+// Copyright (C) 2026 Lisa Biermann, Margarete Mühlleitner, Rui Santos, João
+// Viana
+//
+// SPDX-FileCopyrightText: 2026 Lisa Biermann, Margarete Mühlleitner, Rui
+// Santos, João Viana
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -9,9 +11,9 @@
 #include "Eigen/IterativeLinearSolvers"
 #include <BSMPT/models/SMparam.h> // for C_vev0, C_MassTop, C_g
 #include <algorithm>              // for max, copy
+#include <cstddef>                // for std::size_t
 #include <iostream>               // for operator<<, endl, basic_o...
 #include <memory>                 // for allocator_traits<>::value...
-#include <cstddef>               // for std::size_t
 
 #include <BSMPT/models/ClassPotentialRxSM.h>
 #include <BSMPT/models/IncludeAllModels.h>
@@ -20,31 +22,21 @@
 
 #include <optional>
 
-using namespace Eigen;
-
-/**
- * @file
- * Template for adding a new model class
- */
-
 namespace BSMPT
 {
 namespace Models
 {
-/**
- * Here you have to adjust NNeutralHiggs, NChargedHiggs, nPar (number of
- * Lagrangian parameters AFTER using the tadpole conditions), nParCT (number of
- * counterterms) as well as nVEV (number of VEVs for minimization)
- */
-Class_RxSM::Class_RxSM(const ISMConstants &smConstants)
+
+Class_Potential_RxSM::Class_Potential_RxSM(const ISMConstants &smConstants)
     : Class_Potential_Origin(smConstants)
 {
   Model = ModelID::ModelIDs::RXSM; // global int constant which will be used to
                                    // tell the program which model is called
-  NNeutralHiggs = 3; // number of neutral Higgs bosons at T = 0
+  NNeutralHiggs = 3;               // number of neutral Higgs bosons at T = 0
   NChargedHiggs = 2; // number of charged Higgs bosons  at T = 0 (all d.o.f.)
 
-  nPar   = 4; // number of independent input parameters (in the tree-Level Lagrangian)
+  nPar = 4;    // number of independent input parameters (in the tree-Level
+               // Lagrangian)
   nParCT = 10; // number of parameters in the counterterm potential
 
   nVEV = 2; // number of VEVs to minimize the potential
@@ -65,15 +57,11 @@ Class_RxSM::Class_RxSM(const ISMConstants &smConstants)
   UseVCounterSimplified = false;
 }
 
-Class_RxSM::~Class_RxSM()
+Class_Potential_RxSM::~Class_Potential_RxSM()
 {
 }
 
-/**
- * returns a string which tells the user the chronological order of the
- * counterterms. Use this to complement the legend of the given input file
- */
-std::vector<std::string> Class_RxSM::addLegendCT() const
+std::vector<std::string> Class_Potential_RxSM::addLegendCT() const
 {
   std::vector<std::string> labels;
   labels.push_back("dmsq");
@@ -90,15 +78,10 @@ std::vector<std::string> Class_RxSM::addLegendCT() const
   return labels;
 }
 
-/**
- * returns a string which tells the user the chronological order of the VEVs and
- * the critical temperature. Use this to complement the legend of the given
- * input file
- */
-std::vector<std::string> Class_RxSM::addLegendTemp() const
+std::vector<std::string> Class_Potential_RxSM::addLegendTemp() const
 {
   std::vector<std::string> labels;
-  labels.push_back("T_c"); // Label for the critical temperature
+  labels.push_back("T_c");     // Label for the critical temperature
   labels.push_back("omega_c"); // Label for the critical vev
   labels.push_back("omega_c/T_c");
   labels.push_back("omega_H(T_c)");
@@ -106,12 +89,7 @@ std::vector<std::string> Class_RxSM::addLegendTemp() const
   return labels;
 }
 
-/**
- * returns a string which tells the user the chronological order of the Triple
- * Higgs couplings. Use this to complement the legend of the given input file
- *
- */
-std::vector<std::string> Class_RxSM::addLegendTripleCouplings() const
+std::vector<std::string> Class_Potential_RxSM::addLegendTripleCouplings() const
 {
   std::vector<std::string> labels;
   std::vector<std::string> particles;
@@ -144,11 +122,7 @@ std::vector<std::string> Class_RxSM::addLegendTripleCouplings() const
   return labels;
 }
 
-/**
- * returns a string which tells the user the chronological order of the VEVs.
- * Use this to complement the legend of the given input file
- */
-std::vector<std::string> Class_RxSM::addLegendVEV() const
+std::vector<std::string> Class_Potential_RxSM::addLegendVEV() const
 {
   std::vector<std::string> labels;
   // out = "Your VEV order";
@@ -157,11 +131,8 @@ std::vector<std::string> Class_RxSM::addLegendVEV() const
   return labels;
 }
 
-/**
- * Reads the string linestr and sets the parameter point
- */
-void Class_RxSM::ReadAndSet(const std::string &linestr,
-                                std::vector<double> &par)
+void Class_Potential_RxSM::ReadAndSet(const std::string &linestr,
+                                      std::vector<double> &par)
 {
   std::stringstream ss(linestr);
   double tmp;
@@ -192,13 +163,9 @@ void Class_RxSM::ReadAndSet(const std::string &linestr,
 
   set_gen(par); // This you have to call so that everything will be set
   return;
-
 }
 
-/**
- * Set Class Object as well as the VEV configuration
- */
-void Class_RxSM::set_gen(const std::vector<double> &par)
+void Class_Potential_RxSM::set_gen(const std::vector<double> &par)
 {
   lambdaS      = par[0];
   lambdaHS     = par[1];
@@ -211,12 +178,12 @@ void Class_RxSM::set_gen(const std::vector<double> &par)
   if (std::abs(vS) < ZeroThreshold)
   {
     UnbrokenSingletPhase = true;
-    vS = 0.;
+    vS                   = 0.;
   }
 
   vH = SMConstants.C_vev0;
 
-  double mh2 = SMConstants.C_MassSMHiggs*SMConstants.C_MassSMHiggs;
+  double mh2 = SMConstants.C_MassSMHiggs * SMConstants.C_MassSMHiggs;
 
   // Fix lambda via the condition that one of the Higgses must be SM-like
   // Computed with Mathematica from diagonalising the 2x2 mass matrix and
@@ -225,23 +192,24 @@ void Class_RxSM::set_gen(const std::vector<double> &par)
   // Be careful when the denominator = 0, i.e. when vS*vS*lambdaS == 3*mh2;
   // this is the point where the SM-like state switches from being the
   // heavier or lighter one to the corresponding other one
-  if (std::abs(vS*vS*lambdaS - 3*mh2) < ZeroThreshold)
+  if (std::abs(vS * vS * lambdaS - 3 * mh2) < ZeroThreshold)
   {
     throw std::runtime_error("Invalid parameter point, lambda is divergent.");
   }
 
-  lambda = 2*mh2/vH/vH + 6*vS*vS*lambdaHS*lambdaHS/(vS*vS*lambdaS - 3*mh2);
+  lambda = 2 * mh2 / vH / vH +
+           6 * vS * vS * lambdaHS * lambdaHS / (vS * vS * lambdaS - 3 * mh2);
 
   // Tree-level tadpole equations
-  msq  = -lambda*vH*vH/2.  - lambdaHS*vS*vS;
+  msq = -lambda * vH * vH / 2. - lambdaHS * vS * vS;
 
   if (UnbrokenSingletPhase)
   {
-    mSsq = MassS*MassS - lambdaHS*vH*vH/2.;
+    mSsq = MassS * MassS - lambdaHS * vH * vH / 2.;
   }
   else
   {
-    mSsq = -lambdaS*vS*vS/6. - lambdaHS*vH*vH/2.;
+    mSsq = -lambdaS * vS * vS / 6. - lambdaHS * vH * vH / 2.;
   }
 
   scale = vH; // Renormalisation scale is set to the SM VEV
@@ -250,16 +218,12 @@ void Class_RxSM::set_gen(const std::vector<double> &par)
   vevTree.resize(NHiggs);
   vevTreeMin[0] = vH;
   vevTreeMin[1] = vS;
-  vevTree = MinimizeOrderVEV(vevTreeMin);
+  vevTree       = MinimizeOrderVEV(vevTreeMin);
 
   if (!SetCurvatureDone) SetCurvatureArrays();
 }
 
-/**
- * set your counterterm parameters from the entries of par as well as the
- * entries of Curvature_Higgs_CT_L1 to Curvature_Higgs_CT_L4.
- */
-void Class_RxSM::set_CT_Pot_Par(const std::vector<double> &par)
+void Class_Potential_RxSM::set_CT_Pot_Par(const std::vector<double> &par)
 {
 
   dmsq      = par[0];
@@ -352,10 +316,7 @@ void Class_RxSM::set_CT_Pot_Par(const std::vector<double> &par)
   Curvature_Higgs_CT_L4[4][4][4][4] = dlambdaS;
 }
 
-/**
- * console output of all Parameters
- */
-void Class_RxSM::write() const
+void Class_Potential_RxSM::write() const
 {
 
   std::stringstream ss;
@@ -424,13 +385,8 @@ void Class_RxSM::write() const
   Logger::Write(LoggingLevel::Default, ss.str());
 }
 
-/**
- * Calculates the counterterms. Here you need to work out the scheme and
- * implement the formulas.
- */
-std::vector<double> Class_RxSM::calc_CT() const
+std::vector<double> Class_Potential_RxSM::calc_CT() const
 {
-
   std::vector<double> parCT;
 
   if (!SetCurvatureDone)
@@ -462,21 +418,24 @@ std::vector<double> Class_RxSM::calc_CT() const
   if (UnbrokenSingletPhase)
   {
     // Free parameters t4 and t5 chosen such that dlambdaS = dlambdaHS = 0
+    double t4 = 0;
+    double t5 = 0;
 
     // dmsq
-    parCT.push_back(-3*HesseWeinberg(2, 2) + HesseWeinberg(3, 3));
+    parCT.push_back(-3 * HesseWeinberg(2, 2) + HesseWeinberg(3, 3));
 
     // dlambda
-    parCT.push_back((2*HesseWeinberg(2, 2) - 2*HesseWeinberg(3, 3))/vH/vH);
+    parCT.push_back((2 * HesseWeinberg(2, 2) - 2 * HesseWeinberg(3, 3)) / vH /
+                    vH);
 
     // dmSsq
-    parCT.push_back(-HesseWeinberg(4, 4));
+    parCT.push_back(-pow(vH, 2) / 2 * t5 - HesseWeinberg(4, 4));
 
     // dlambdaS
-    parCT.push_back(0);
+    parCT.push_back(t4);
 
     // dlambdaHS
-    parCT.push_back(0);
+    parCT.push_back(t5);
 
     // dT1
     parCT.push_back(-NablaWeinberg(0));
@@ -488,38 +447,35 @@ std::vector<double> Class_RxSM::calc_CT() const
     parCT.push_back(-NablaWeinberg(2));
 
     // dT4
-    parCT.push_back(HesseWeinberg(2, 2)*vH - NablaWeinberg(3));
+    parCT.push_back(HesseWeinberg(2, 2) * vH - NablaWeinberg(3));
 
     // dT5
     parCT.push_back(-NablaWeinberg(4));
   }
   else
   {
-    // Free parameter t chosen such that all tadpole CTs vanish
+    // Free parameter t chosen such that the tadpole CT dT5 vanishes
+    double t = -3 * (HesseWeinberg(4, 4) * vS - NablaWeinberg(4)) * pow(vS, -3);
 
     // dmsq
-    parCT.push_back((-3*HesseWeinberg(2, 2)*vH
-                     + HesseWeinberg(3, 3)*vH
-                     + HesseWeinberg(3, 4)*vS)/vH);
+    parCT.push_back((-3 * HesseWeinberg(2, 2) * vH + HesseWeinberg(3, 3) * vH +
+                     HesseWeinberg(3, 4) * vS) /
+                    vH);
 
     // dlambda
-    parCT.push_back((2*HesseWeinberg(2, 2)
-                     - 2*HesseWeinberg(3, 3))/vH/vH);
+    parCT.push_back((2 * HesseWeinberg(2, 2) - 2 * HesseWeinberg(3, 3)) / vH /
+                    vH);
 
     // dmSsq
-    // parCT.push_back((HesseWeinberg(3, 4)*vH/2
-    //                  - HesseWeinberg(4, 4)*vS)/vS);
-    parCT.push_back((HesseWeinberg(3, 4)*vH
-                     + HesseWeinberg(4, 4)*vS
-                     - 3*NablaWeinberg(4))/vS/2);
+    parCT.push_back((-pow(vS, 3) * t + HesseWeinberg(3, 4) * vH -
+                     2 * HesseWeinberg(4, 4) * vS) /
+                    (2 * vS));
 
     // dlambdaS
-    // parCT.push_back(0);
-    parCT.push_back((-3*HesseWeinberg(4, 4)*vS
-                     + 3*NablaWeinberg(4))*pow(vS, -3));
+    parCT.push_back(t);
 
     // dlambdaHS
-    parCT.push_back(-HesseWeinberg(3, 4)/vH/vS);
+    parCT.push_back(-HesseWeinberg(3, 4) / vH / vS);
 
     // dT1
     parCT.push_back(-NablaWeinberg(0));
@@ -531,19 +487,19 @@ std::vector<double> Class_RxSM::calc_CT() const
     parCT.push_back(-NablaWeinberg(2));
 
     // dT4
-    parCT.push_back(HesseWeinberg(2, 2)*vH - NablaWeinberg(3));
+    parCT.push_back(HesseWeinberg(2, 2) * vH - NablaWeinberg(3));
 
     // dT5
-    // parCT.push_back(HesseWeinberg(4, 4)*vS - NablaWeinberg(4));
-    parCT.push_back(0);
+    parCT.push_back(pow(vS, 3) / 3 * t + HesseWeinberg(4, 4) * vS -
+                    NablaWeinberg(4));
   }
 
   return parCT;
 }
 
-void Class_RxSM::FindMassBasisIndices(
-     const std::vector<double> &HiggsMasses,
-     const MatrixXd &HiggsRot)
+void Class_Potential_RxSM::FindMassBasisIndices(
+    const std::vector<double> &HiggsMasses,
+    const MatrixXd &HiggsRot)
 {
   // Indices of mass eigenstates for rotation from interaction to mass basis
   std::optional<std::size_t> tpos_Gp, tpos_Gm, tpos_G0, tpos_h, tpos_H;
@@ -593,8 +549,9 @@ void Class_RxSM::FindMassBasisIndices(
                                  "or not diagonal.");
       }
     }
-    else if (std::abs(HiggsRot(i, pos_zeta1)) + std::abs(HiggsRot(i, pos_zetaS)) >
-        ARMZeroThreshold) // use that mh < mH
+    else if (std::abs(HiggsRot(i, pos_zeta1)) +
+                 std::abs(HiggsRot(i, pos_zetaS)) >
+             ARMZeroThreshold) // use that mh < mH
     {
       if (not tpos_h.has_value())
       {
@@ -613,9 +570,8 @@ void Class_RxSM::FindMassBasisIndices(
   }
 
   // Sanity check if all position indices are set
-  if (not (tpos_Gp.has_value() and tpos_Gm.has_value() and tpos_G0.has_value()
-           and tpos_h.has_value() and tpos_H.has_value())
-     )
+  if (not(tpos_Gp.has_value() and tpos_Gm.has_value() and
+          tpos_G0.has_value() and tpos_h.has_value() and tpos_H.has_value()))
   {
     throw std::runtime_error("Error. Not all position indices are set.");
   }
@@ -623,8 +579,8 @@ void Class_RxSM::FindMassBasisIndices(
   pos_Gp = tpos_Gp.value();
   pos_Gm = tpos_Gm.value();
   pos_G0 = tpos_G0.value();
-  pos_h = tpos_h.value();
-  pos_H = tpos_H.value();
+  pos_h  = tpos_h.value();
+  pos_H  = tpos_H.value();
 
   // check if all other elements of rotation matrix are zero
   bool zero_element = false;
@@ -632,11 +588,13 @@ void Class_RxSM::FindMassBasisIndices(
   {
     for (std::size_t j = 0; j < NHiggs; j++)
     {
-      if (not((j == pos_rho1 and i == pos_Gp) or
-              (j == pos_eta1 and i == pos_Gm) or
-              (j == pos_psi1 and i == pos_G0) or
-              (j == pos_zeta1 and (i == pos_h or i == pos_H)) or
-              (j == pos_zetaS and (i == pos_h or i == pos_H))))
+      bool IsGoldstone = (j == pos_rho1 and i == pos_Gp) or
+                         (j == pos_eta1 and i == pos_Gm) or
+                         (j == pos_psi1 and i == pos_G0);
+      bool IsNeutralHiggs = (j == pos_zeta1 and (i == pos_h or i == pos_H)) or
+                            (j == pos_zetaS and (i == pos_h or i == pos_H));
+
+      if (not(IsGoldstone or IsNeutralHiggs))
       {
         zero_element = true;
       }
@@ -652,23 +610,23 @@ void Class_RxSM::FindMassBasisIndices(
   // and exotic Higgses.
   // Due to the masses being ordered, we will always have
   //  HiggsMasses[pos_h] <= HiggsMasses[pos_H]
-  double diff1 = std::abs(std::sqrt(HiggsMasses[pos_h])
-                          - SMConstants.C_MassSMHiggs);
-  double diff2 = std::abs(std::sqrt(HiggsMasses[pos_H])
-                          - SMConstants.C_MassSMHiggs);
+  double diff1 =
+      std::abs(std::sqrt(HiggsMasses[pos_h]) - SMConstants.C_MassSMHiggs);
+  double diff2 =
+      std::abs(std::sqrt(HiggsMasses[pos_H]) - SMConstants.C_MassSMHiggs);
   if (diff1 < diff2)
   {
     pos_h_SM = pos_h;
-    pos_h_H = pos_H;
+    pos_h_H  = pos_H;
   }
   else
   {
-    pos_h_H = pos_h;
+    pos_h_H  = pos_h;
     pos_h_SM = pos_H;
   }
 }
 
-void Class_RxSM::AdjustRotationMatrix()
+void Class_Potential_RxSM::AdjustRotationMatrix()
 {
   if (!SetCurvatureDone) SetCurvatureArrays();
   if (!CalcCouplingsDone) CalculatePhysicalCouplings();
@@ -740,7 +698,7 @@ void Class_RxSM::AdjustRotationMatrix()
   }
 }
 
-void Class_RxSM::TripleHiggsCouplings()
+void Class_Potential_RxSM::TripleHiggsCouplings()
 {
   if (!SetCurvatureDone) SetCurvatureArrays();
   if (!CalcCouplingsDone) CalculatePhysicalCouplings();
@@ -834,7 +792,7 @@ void Class_RxSM::TripleHiggsCouplings()
   }
 }
 
-void Class_RxSM::SetCurvatureArrays()
+void Class_Potential_RxSM::SetCurvatureArrays()
 {
   initVectors();
   SetCurvatureDone = true;
@@ -926,33 +884,45 @@ void Class_RxSM::SetCurvatureArrays()
   Curvature_Gauge_G2H2[1][1][2][2] = SMConstants.C_g * SMConstants.C_g / 0.2e1;
   Curvature_Gauge_G2H2[1][1][3][3] = SMConstants.C_g * SMConstants.C_g / 0.2e1;
   Curvature_Gauge_G2H2[1][3][0][2] = SMConstants.C_gs * SMConstants.C_g / 0.2e1;
-  Curvature_Gauge_G2H2[1][3][1][3] = -SMConstants.C_gs * SMConstants.C_g / 0.2e1;
+  Curvature_Gauge_G2H2[1][3][1][3] =
+      -SMConstants.C_gs * SMConstants.C_g / 0.2e1;
   Curvature_Gauge_G2H2[1][3][2][0] = SMConstants.C_gs * SMConstants.C_g / 0.2e1;
-  Curvature_Gauge_G2H2[1][3][3][1] = -SMConstants.C_gs * SMConstants.C_g / 0.2e1;
+  Curvature_Gauge_G2H2[1][3][3][1] =
+      -SMConstants.C_gs * SMConstants.C_g / 0.2e1;
   Curvature_Gauge_G2H2[2][2][0][0] = SMConstants.C_g * SMConstants.C_g / 0.2e1;
   Curvature_Gauge_G2H2[2][2][1][1] = SMConstants.C_g * SMConstants.C_g / 0.2e1;
   Curvature_Gauge_G2H2[2][2][2][2] = SMConstants.C_g * SMConstants.C_g / 0.2e1;
   Curvature_Gauge_G2H2[2][2][3][3] = SMConstants.C_g * SMConstants.C_g / 0.2e1;
   Curvature_Gauge_G2H2[2][3][0][0] = SMConstants.C_gs * SMConstants.C_g / 0.2e1;
   Curvature_Gauge_G2H2[2][3][1][1] = SMConstants.C_gs * SMConstants.C_g / 0.2e1;
-  Curvature_Gauge_G2H2[2][3][2][2] = -SMConstants.C_gs * SMConstants.C_g / 0.2e1;
-  Curvature_Gauge_G2H2[2][3][3][3] = -SMConstants.C_gs * SMConstants.C_g / 0.2e1;
+  Curvature_Gauge_G2H2[2][3][2][2] =
+      -SMConstants.C_gs * SMConstants.C_g / 0.2e1;
+  Curvature_Gauge_G2H2[2][3][3][3] =
+      -SMConstants.C_gs * SMConstants.C_g / 0.2e1;
   Curvature_Gauge_G2H2[3][0][0][3] = SMConstants.C_gs * SMConstants.C_g / 0.2e1;
   Curvature_Gauge_G2H2[3][0][1][2] = SMConstants.C_gs * SMConstants.C_g / 0.2e1;
   Curvature_Gauge_G2H2[3][0][2][1] = SMConstants.C_gs * SMConstants.C_g / 0.2e1;
   Curvature_Gauge_G2H2[3][0][3][0] = SMConstants.C_gs * SMConstants.C_g / 0.2e1;
   Curvature_Gauge_G2H2[3][1][0][2] = SMConstants.C_gs * SMConstants.C_g / 0.2e1;
-  Curvature_Gauge_G2H2[3][1][1][3] = -SMConstants.C_gs * SMConstants.C_g / 0.2e1;
+  Curvature_Gauge_G2H2[3][1][1][3] =
+      -SMConstants.C_gs * SMConstants.C_g / 0.2e1;
   Curvature_Gauge_G2H2[3][1][2][0] = SMConstants.C_gs * SMConstants.C_g / 0.2e1;
-  Curvature_Gauge_G2H2[3][1][3][1] = -SMConstants.C_gs * SMConstants.C_g / 0.2e1;
+  Curvature_Gauge_G2H2[3][1][3][1] =
+      -SMConstants.C_gs * SMConstants.C_g / 0.2e1;
   Curvature_Gauge_G2H2[3][2][0][0] = SMConstants.C_gs * SMConstants.C_g / 0.2e1;
   Curvature_Gauge_G2H2[3][2][1][1] = SMConstants.C_gs * SMConstants.C_g / 0.2e1;
-  Curvature_Gauge_G2H2[3][2][2][2] = -SMConstants.C_gs * SMConstants.C_g / 0.2e1;
-  Curvature_Gauge_G2H2[3][2][3][3] = -SMConstants.C_gs * SMConstants.C_g / 0.2e1;
-  Curvature_Gauge_G2H2[3][3][0][0] = SMConstants.C_gs * SMConstants.C_gs / 0.2e1;
-  Curvature_Gauge_G2H2[3][3][1][1] = SMConstants.C_gs * SMConstants.C_gs / 0.2e1;
-  Curvature_Gauge_G2H2[3][3][2][2] = SMConstants.C_gs * SMConstants.C_gs / 0.2e1;
-  Curvature_Gauge_G2H2[3][3][3][3] = SMConstants.C_gs * SMConstants.C_gs / 0.2e1;
+  Curvature_Gauge_G2H2[3][2][2][2] =
+      -SMConstants.C_gs * SMConstants.C_g / 0.2e1;
+  Curvature_Gauge_G2H2[3][2][3][3] =
+      -SMConstants.C_gs * SMConstants.C_g / 0.2e1;
+  Curvature_Gauge_G2H2[3][3][0][0] =
+      SMConstants.C_gs * SMConstants.C_gs / 0.2e1;
+  Curvature_Gauge_G2H2[3][3][1][1] =
+      SMConstants.C_gs * SMConstants.C_gs / 0.2e1;
+  Curvature_Gauge_G2H2[3][3][2][2] =
+      SMConstants.C_gs * SMConstants.C_gs / 0.2e1;
+  Curvature_Gauge_G2H2[3][3][3][3] =
+      SMConstants.C_gs * SMConstants.C_gs / 0.2e1;
 
   Curvature_Lepton_F2H1[0][1][2] = II / vH * SMConstants.C_MassElectron;
   Curvature_Lepton_F2H1[0][1][3] = 0.1e1 / vH * SMConstants.C_MassElectron;
@@ -979,7 +949,6 @@ void Class_RxSM::SetCurvatureArrays()
   Curvature_Lepton_F2H1[8][5][0] = 0.1e1 / vH * SMConstants.C_MassTau;
   Curvature_Lepton_F2H1[8][5][1] = II / vH * SMConstants.C_MassTau;
 
-
   std::complex<double> V11, V12, V13, V21, V22, V23, V31, V32, V33;
   V11 = SMConstants.C_Vud;
   V12 = SMConstants.C_Vus;
@@ -1004,124 +973,134 @@ void Class_RxSM::SetCurvatureArrays()
 
   Curvature_Quark_F2H1[0][6][2] = -II / vH * SMConstants.C_MassUp;
   Curvature_Quark_F2H1[0][6][3] = 0.1e1 / vH * SMConstants.C_MassUp;
-  Curvature_Quark_F2H1[0][9][0] = -0.1e1 / vH * SMConstants.C_MassUp * conj(V11);
+  Curvature_Quark_F2H1[0][9][0] =
+      -0.1e1 / vH * SMConstants.C_MassUp * conj(V11);
   Curvature_Quark_F2H1[0][9][1] = II / vH * SMConstants.C_MassUp * conj(V11);
-  Curvature_Quark_F2H1[0][10][0] = -0.1e1 / vH * SMConstants.C_MassUp * conj(V12);
+  Curvature_Quark_F2H1[0][10][0] =
+      -0.1e1 / vH * SMConstants.C_MassUp * conj(V12);
   Curvature_Quark_F2H1[0][10][1] = II / vH * SMConstants.C_MassUp * conj(V12);
-  Curvature_Quark_F2H1[0][11][0] = -0.1e1 / vH * SMConstants.C_MassUp * conj(V13);
+  Curvature_Quark_F2H1[0][11][0] =
+      -0.1e1 / vH * SMConstants.C_MassUp * conj(V13);
   Curvature_Quark_F2H1[0][11][1] = II / vH * SMConstants.C_MassUp * conj(V13);
-  Curvature_Quark_F2H1[1][7][2] = -II / vH * SMConstants.C_MassCharm;
-  Curvature_Quark_F2H1[1][7][3] = 0.1e1 / vH * SMConstants.C_MassCharm;
-  Curvature_Quark_F2H1[1][9][0] = -0.1e1 / vH * SMConstants.C_MassCharm * conj(V21);
+  Curvature_Quark_F2H1[1][7][2]  = -II / vH * SMConstants.C_MassCharm;
+  Curvature_Quark_F2H1[1][7][3]  = 0.1e1 / vH * SMConstants.C_MassCharm;
+  Curvature_Quark_F2H1[1][9][0] =
+      -0.1e1 / vH * SMConstants.C_MassCharm * conj(V21);
   Curvature_Quark_F2H1[1][9][1] = II / vH * SMConstants.C_MassCharm * conj(V21);
-  Curvature_Quark_F2H1[1][10][0] = -0.1e1 / vH * SMConstants.C_MassCharm * conj(V22);
-  Curvature_Quark_F2H1[1][10][1] = II / vH * SMConstants.C_MassCharm * conj(V22);
-  Curvature_Quark_F2H1[1][11][0] = -0.1e1 / vH * SMConstants.C_MassCharm * conj(V23);
-  Curvature_Quark_F2H1[1][11][1] = II / vH * SMConstants.C_MassCharm * conj(V23);
+  Curvature_Quark_F2H1[1][10][0] =
+      -0.1e1 / vH * SMConstants.C_MassCharm * conj(V22);
+  Curvature_Quark_F2H1[1][10][1] =
+      II / vH * SMConstants.C_MassCharm * conj(V22);
+  Curvature_Quark_F2H1[1][11][0] =
+      -0.1e1 / vH * SMConstants.C_MassCharm * conj(V23);
+  Curvature_Quark_F2H1[1][11][1] =
+      II / vH * SMConstants.C_MassCharm * conj(V23);
   Curvature_Quark_F2H1[2][8][2] = -II / vH * SMConstants.C_MassTop;
   Curvature_Quark_F2H1[2][8][3] = 0.1e1 / vH * SMConstants.C_MassTop;
-  Curvature_Quark_F2H1[2][9][0] = -0.1e1 / vH * SMConstants.C_MassTop * conj(V31);
+  Curvature_Quark_F2H1[2][9][0] =
+      -0.1e1 / vH * SMConstants.C_MassTop * conj(V31);
   Curvature_Quark_F2H1[2][9][1] = II / vH * SMConstants.C_MassTop * conj(V31);
-  Curvature_Quark_F2H1[2][10][0] = -0.1e1 / vH * SMConstants.C_MassTop * conj(V32);
+  Curvature_Quark_F2H1[2][10][0] =
+      -0.1e1 / vH * SMConstants.C_MassTop * conj(V32);
   Curvature_Quark_F2H1[2][10][1] = II / vH * SMConstants.C_MassTop * conj(V32);
-  Curvature_Quark_F2H1[2][11][0] = -0.1e1 / vH * SMConstants.C_MassTop * conj(V33);
+  Curvature_Quark_F2H1[2][11][0] =
+      -0.1e1 / vH * SMConstants.C_MassTop * conj(V33);
   Curvature_Quark_F2H1[2][11][1] = II / vH * SMConstants.C_MassTop * conj(V33);
-  Curvature_Quark_F2H1[3][6][0] = V11 / vH * SMConstants.C_MassDown;
-  Curvature_Quark_F2H1[3][6][1] = II * V11 / vH * SMConstants.C_MassDown;
-  Curvature_Quark_F2H1[3][7][0] = V21 / vH * SMConstants.C_MassDown;
-  Curvature_Quark_F2H1[3][7][1] = II * V21 / vH * SMConstants.C_MassDown;
-  Curvature_Quark_F2H1[3][8][0] = V31 / vH * SMConstants.C_MassDown;
-  Curvature_Quark_F2H1[3][8][1] = II * V31 / vH * SMConstants.C_MassDown;
-  Curvature_Quark_F2H1[3][9][2] = II / vH * SMConstants.C_MassDown;
-  Curvature_Quark_F2H1[3][9][3] = 0.1e1 / vH * SMConstants.C_MassDown;
-  Curvature_Quark_F2H1[4][6][0] = 0.1e1 / vH * SMConstants.C_MassStrange * V12;
-  Curvature_Quark_F2H1[4][6][1] = II / vH * SMConstants.C_MassStrange * V12;
-  Curvature_Quark_F2H1[4][7][0] = V22 / vH * SMConstants.C_MassStrange;
-  Curvature_Quark_F2H1[4][7][1] = II * V22 / vH * SMConstants.C_MassStrange;
-  Curvature_Quark_F2H1[4][8][0] = 0.1e1 / vH * SMConstants.C_MassStrange * V32;
-  Curvature_Quark_F2H1[4][8][1] = II / vH * SMConstants.C_MassStrange * V32;
+  Curvature_Quark_F2H1[3][6][0]  = V11 / vH * SMConstants.C_MassDown;
+  Curvature_Quark_F2H1[3][6][1]  = II * V11 / vH * SMConstants.C_MassDown;
+  Curvature_Quark_F2H1[3][7][0]  = V21 / vH * SMConstants.C_MassDown;
+  Curvature_Quark_F2H1[3][7][1]  = II * V21 / vH * SMConstants.C_MassDown;
+  Curvature_Quark_F2H1[3][8][0]  = V31 / vH * SMConstants.C_MassDown;
+  Curvature_Quark_F2H1[3][8][1]  = II * V31 / vH * SMConstants.C_MassDown;
+  Curvature_Quark_F2H1[3][9][2]  = II / vH * SMConstants.C_MassDown;
+  Curvature_Quark_F2H1[3][9][3]  = 0.1e1 / vH * SMConstants.C_MassDown;
+  Curvature_Quark_F2H1[4][6][0]  = 0.1e1 / vH * SMConstants.C_MassStrange * V12;
+  Curvature_Quark_F2H1[4][6][1]  = II / vH * SMConstants.C_MassStrange * V12;
+  Curvature_Quark_F2H1[4][7][0]  = V22 / vH * SMConstants.C_MassStrange;
+  Curvature_Quark_F2H1[4][7][1]  = II * V22 / vH * SMConstants.C_MassStrange;
+  Curvature_Quark_F2H1[4][8][0]  = 0.1e1 / vH * SMConstants.C_MassStrange * V32;
+  Curvature_Quark_F2H1[4][8][1]  = II / vH * SMConstants.C_MassStrange * V32;
   Curvature_Quark_F2H1[4][10][2] = II / vH * SMConstants.C_MassStrange;
   Curvature_Quark_F2H1[4][10][3] = 0.1e1 / vH * SMConstants.C_MassStrange;
-  Curvature_Quark_F2H1[5][6][0] = V13 / vH * SMConstants.C_MassBottom;
-  Curvature_Quark_F2H1[5][6][1] = II / vH * SMConstants.C_MassBottom * V13;
-  Curvature_Quark_F2H1[5][7][0] = V23 / vH * SMConstants.C_MassBottom;
-  Curvature_Quark_F2H1[5][7][1] = II / vH * SMConstants.C_MassBottom * V23;
-  Curvature_Quark_F2H1[5][8][0] = V33 / vH * SMConstants.C_MassBottom;
-  Curvature_Quark_F2H1[5][8][1] = II / vH * SMConstants.C_MassBottom * V33;
+  Curvature_Quark_F2H1[5][6][0]  = V13 / vH * SMConstants.C_MassBottom;
+  Curvature_Quark_F2H1[5][6][1]  = II / vH * SMConstants.C_MassBottom * V13;
+  Curvature_Quark_F2H1[5][7][0]  = V23 / vH * SMConstants.C_MassBottom;
+  Curvature_Quark_F2H1[5][7][1]  = II / vH * SMConstants.C_MassBottom * V23;
+  Curvature_Quark_F2H1[5][8][0]  = V33 / vH * SMConstants.C_MassBottom;
+  Curvature_Quark_F2H1[5][8][1]  = II / vH * SMConstants.C_MassBottom * V33;
   Curvature_Quark_F2H1[5][11][2] = II / vH * SMConstants.C_MassBottom;
   Curvature_Quark_F2H1[5][11][3] = 0.1e1 / vH * SMConstants.C_MassBottom;
-  Curvature_Quark_F2H1[6][0][2] = -II / vH * SMConstants.C_MassUp;
-  Curvature_Quark_F2H1[6][0][3] = 0.1e1 / vH * SMConstants.C_MassUp;
-  Curvature_Quark_F2H1[6][3][0] = V11 / vH * SMConstants.C_MassDown;
-  Curvature_Quark_F2H1[6][3][1] = II * V11 / vH * SMConstants.C_MassDown;
-  Curvature_Quark_F2H1[6][4][0] = 0.1e1 / vH * SMConstants.C_MassStrange * V12;
-  Curvature_Quark_F2H1[6][4][1] = II / vH * SMConstants.C_MassStrange * V12;
-  Curvature_Quark_F2H1[6][5][0] = V13 / vH * SMConstants.C_MassBottom;
-  Curvature_Quark_F2H1[6][5][1] = II / vH * SMConstants.C_MassBottom * V13;
-  Curvature_Quark_F2H1[7][1][2] = -II / vH * SMConstants.C_MassCharm;
-  Curvature_Quark_F2H1[7][1][3] = 0.1e1 / vH * SMConstants.C_MassCharm;
-  Curvature_Quark_F2H1[7][3][0] = V21 / vH * SMConstants.C_MassDown;
-  Curvature_Quark_F2H1[7][3][1] = II * V21 / vH * SMConstants.C_MassDown;
-  Curvature_Quark_F2H1[7][4][0] = V22 / vH * SMConstants.C_MassStrange;
-  Curvature_Quark_F2H1[7][4][1] = II * V22 / vH * SMConstants.C_MassStrange;
-  Curvature_Quark_F2H1[7][5][0] = V23 / vH * SMConstants.C_MassBottom;
-  Curvature_Quark_F2H1[7][5][1] = II / vH * SMConstants.C_MassBottom * V23;
-  Curvature_Quark_F2H1[8][2][2] = -II / vH * SMConstants.C_MassTop;
-  Curvature_Quark_F2H1[8][2][3] = 0.1e1 / vH * SMConstants.C_MassTop;
-  Curvature_Quark_F2H1[8][3][0] = V31 / vH * SMConstants.C_MassDown;
-  Curvature_Quark_F2H1[8][3][1] = II * V31 / vH * SMConstants.C_MassDown;
-  Curvature_Quark_F2H1[8][4][0] = 0.1e1 / vH * SMConstants.C_MassStrange * V32;
-  Curvature_Quark_F2H1[8][4][1] = II / vH * SMConstants.C_MassStrange * V32;
-  Curvature_Quark_F2H1[8][5][0] = V33 / vH * SMConstants.C_MassBottom;
-  Curvature_Quark_F2H1[8][5][1] = II / vH * SMConstants.C_MassBottom * V33;
-  Curvature_Quark_F2H1[9][0][0] = -0.1e1 / vH * SMConstants.C_MassUp * conj(V11);
+  Curvature_Quark_F2H1[6][0][2]  = -II / vH * SMConstants.C_MassUp;
+  Curvature_Quark_F2H1[6][0][3]  = 0.1e1 / vH * SMConstants.C_MassUp;
+  Curvature_Quark_F2H1[6][3][0]  = V11 / vH * SMConstants.C_MassDown;
+  Curvature_Quark_F2H1[6][3][1]  = II * V11 / vH * SMConstants.C_MassDown;
+  Curvature_Quark_F2H1[6][4][0]  = 0.1e1 / vH * SMConstants.C_MassStrange * V12;
+  Curvature_Quark_F2H1[6][4][1]  = II / vH * SMConstants.C_MassStrange * V12;
+  Curvature_Quark_F2H1[6][5][0]  = V13 / vH * SMConstants.C_MassBottom;
+  Curvature_Quark_F2H1[6][5][1]  = II / vH * SMConstants.C_MassBottom * V13;
+  Curvature_Quark_F2H1[7][1][2]  = -II / vH * SMConstants.C_MassCharm;
+  Curvature_Quark_F2H1[7][1][3]  = 0.1e1 / vH * SMConstants.C_MassCharm;
+  Curvature_Quark_F2H1[7][3][0]  = V21 / vH * SMConstants.C_MassDown;
+  Curvature_Quark_F2H1[7][3][1]  = II * V21 / vH * SMConstants.C_MassDown;
+  Curvature_Quark_F2H1[7][4][0]  = V22 / vH * SMConstants.C_MassStrange;
+  Curvature_Quark_F2H1[7][4][1]  = II * V22 / vH * SMConstants.C_MassStrange;
+  Curvature_Quark_F2H1[7][5][0]  = V23 / vH * SMConstants.C_MassBottom;
+  Curvature_Quark_F2H1[7][5][1]  = II / vH * SMConstants.C_MassBottom * V23;
+  Curvature_Quark_F2H1[8][2][2]  = -II / vH * SMConstants.C_MassTop;
+  Curvature_Quark_F2H1[8][2][3]  = 0.1e1 / vH * SMConstants.C_MassTop;
+  Curvature_Quark_F2H1[8][3][0]  = V31 / vH * SMConstants.C_MassDown;
+  Curvature_Quark_F2H1[8][3][1]  = II * V31 / vH * SMConstants.C_MassDown;
+  Curvature_Quark_F2H1[8][4][0]  = 0.1e1 / vH * SMConstants.C_MassStrange * V32;
+  Curvature_Quark_F2H1[8][4][1]  = II / vH * SMConstants.C_MassStrange * V32;
+  Curvature_Quark_F2H1[8][5][0]  = V33 / vH * SMConstants.C_MassBottom;
+  Curvature_Quark_F2H1[8][5][1]  = II / vH * SMConstants.C_MassBottom * V33;
+  Curvature_Quark_F2H1[9][0][0] =
+      -0.1e1 / vH * SMConstants.C_MassUp * conj(V11);
   Curvature_Quark_F2H1[9][0][1] = II / vH * SMConstants.C_MassUp * conj(V11);
-  Curvature_Quark_F2H1[9][1][0] = -0.1e1 / vH * SMConstants.C_MassCharm * conj(V21);
+  Curvature_Quark_F2H1[9][1][0] =
+      -0.1e1 / vH * SMConstants.C_MassCharm * conj(V21);
   Curvature_Quark_F2H1[9][1][1] = II / vH * SMConstants.C_MassCharm * conj(V21);
-  Curvature_Quark_F2H1[9][2][0] = -0.1e1 / vH * SMConstants.C_MassTop * conj(V31);
+  Curvature_Quark_F2H1[9][2][0] =
+      -0.1e1 / vH * SMConstants.C_MassTop * conj(V31);
   Curvature_Quark_F2H1[9][2][1] = II / vH * SMConstants.C_MassTop * conj(V31);
   Curvature_Quark_F2H1[9][3][2] = II / vH * SMConstants.C_MassDown;
   Curvature_Quark_F2H1[9][3][3] = 0.1e1 / vH * SMConstants.C_MassDown;
-  Curvature_Quark_F2H1[10][0][0] = -0.1e1 / vH * SMConstants.C_MassUp * conj(V12);
+  Curvature_Quark_F2H1[10][0][0] =
+      -0.1e1 / vH * SMConstants.C_MassUp * conj(V12);
   Curvature_Quark_F2H1[10][0][1] = II / vH * SMConstants.C_MassUp * conj(V12);
-  Curvature_Quark_F2H1[10][1][0] = -0.1e1 / vH * SMConstants.C_MassCharm * conj(V22);
-  Curvature_Quark_F2H1[10][1][1] = II / vH * SMConstants.C_MassCharm * conj(V22);
-  Curvature_Quark_F2H1[10][2][0] = -0.1e1 / vH * SMConstants.C_MassTop * conj(V32);
+  Curvature_Quark_F2H1[10][1][0] =
+      -0.1e1 / vH * SMConstants.C_MassCharm * conj(V22);
+  Curvature_Quark_F2H1[10][1][1] =
+      II / vH * SMConstants.C_MassCharm * conj(V22);
+  Curvature_Quark_F2H1[10][2][0] =
+      -0.1e1 / vH * SMConstants.C_MassTop * conj(V32);
   Curvature_Quark_F2H1[10][2][1] = II / vH * SMConstants.C_MassTop * conj(V32);
   Curvature_Quark_F2H1[10][4][2] = II / vH * SMConstants.C_MassStrange;
   Curvature_Quark_F2H1[10][4][3] = 0.1e1 / vH * SMConstants.C_MassStrange;
-  Curvature_Quark_F2H1[11][0][0] = -0.1e1 / vH * SMConstants.C_MassUp * conj(V13);
+  Curvature_Quark_F2H1[11][0][0] =
+      -0.1e1 / vH * SMConstants.C_MassUp * conj(V13);
   Curvature_Quark_F2H1[11][0][1] = II / vH * SMConstants.C_MassUp * conj(V13);
-  Curvature_Quark_F2H1[11][1][0] = -0.1e1 / vH * SMConstants.C_MassCharm * conj(V23);
-  Curvature_Quark_F2H1[11][1][1] = II / vH * SMConstants.C_MassCharm * conj(V23);
-  Curvature_Quark_F2H1[11][2][0] = -0.1e1 / vH * SMConstants.C_MassTop * conj(V33);
+  Curvature_Quark_F2H1[11][1][0] =
+      -0.1e1 / vH * SMConstants.C_MassCharm * conj(V23);
+  Curvature_Quark_F2H1[11][1][1] =
+      II / vH * SMConstants.C_MassCharm * conj(V23);
+  Curvature_Quark_F2H1[11][2][0] =
+      -0.1e1 / vH * SMConstants.C_MassTop * conj(V33);
   Curvature_Quark_F2H1[11][2][1] = II / vH * SMConstants.C_MassTop * conj(V33);
   Curvature_Quark_F2H1[11][5][2] = II / vH * SMConstants.C_MassBottom;
   Curvature_Quark_F2H1[11][5][3] = 0.1e1 / vH * SMConstants.C_MassBottom;
-
 }
 
-bool Class_RxSM::CalculateDebyeSimplified()
+bool Class_Potential_RxSM::CalculateDebyeSimplified()
 {
   return false;
-  /*
-   * Use this function if you calculated the Debye corrections to the Higgs mass
-   * matrix and implement your formula here and return true. The vector is given
-   * by DebyeHiggs[NHiggs][NHiggs]
-   */
 }
 
-bool Class_RxSM::CalculateDebyeGaugeSimplified()
+bool Class_Potential_RxSM::CalculateDebyeGaugeSimplified()
 {
-  /*
-   * Use this function if you calculated the Debye corrections to the gauge mass
-   * matrix and implement your formula here and return true. The vector is given
-   * by DebyeGauge[NGauge][NGauge]
-   */
-
   return false;
 }
-double Class_RxSM::VTreeSimplified(const std::vector<double> &v) const
+double Class_Potential_RxSM::VTreeSimplified(const std::vector<double> &v) const
 {
   (void)v;
   if (not UseVTreeSimplified) return 0;
@@ -1129,7 +1108,8 @@ double Class_RxSM::VTreeSimplified(const std::vector<double> &v) const
   return res;
 }
 
-double Class_RxSM::VCounterSimplified(const std::vector<double> &v) const
+double
+Class_Potential_RxSM::VCounterSimplified(const std::vector<double> &v) const
 {
   (void)v;
   if (not UseVCounterSimplified) return 0;
@@ -1137,8 +1117,8 @@ double Class_RxSM::VCounterSimplified(const std::vector<double> &v) const
   return res;
 }
 
-void Class_RxSM::Debugging(const std::vector<double> &input,
-                               std::vector<double> &output) const
+void Class_Potential_RxSM::Debugging(const std::vector<double> &input,
+                                     std::vector<double> &output) const
 {
   (void)input;
   (void)output;
