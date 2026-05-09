@@ -2463,7 +2463,7 @@ Class_Potential_Origin::HiggsMassesSquared(const std::vector<double> &v,
 {
   std::vector<double> res;
 
-  auto MassMatrix = HiggsMassMatrix(v, Temp, diff);
+  auto MassMatrix = HiggsMassMatrix(v, Temp);
 
   double ZeroMass = std::pow(10, -5);
 
