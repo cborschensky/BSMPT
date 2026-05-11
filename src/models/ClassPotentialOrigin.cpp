@@ -158,7 +158,7 @@ Class_Potential_Origin::fermion(double MassSquared, double Temp, int diff) const
   {
     res += 1.0 / (2 * std::pow(M_PI, 2)) *
            (4 * std::pow(Temp, 3) *
-                ThermalFunctions::JfermionInterpolated(Ratio) -
+                ThermalFunctions::JfermionInterpolated(Ratio, 0) -
             2 * Temp * MassSquared *
                 ThermalFunctions::JfermionInterpolated(Ratio, 1));
   }
