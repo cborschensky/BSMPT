@@ -1163,26 +1163,23 @@ void BounceSolution::CalculateWallVelocity(const Minimum &false_min,
 
 double BounceSolution::CalculateSoundSpeed(Phase &phase)
 {
-  const double eps                         = 0.01;
-  std::function<double(Minimum minimum)> V = [&](Minimum minimum)
-  {
-    // Potential wrapper
-    std::vector<double> res = modelPointer->MinimizeOrderVEV(minimum.point);
-    return modelPointer->VEff(res, minimum.temp);
-  };
-  const double V_before = V(phase.Get(Tstar + eps));
-  const double V_tstar  = V(phase.Get(Tstar));
-  const double V_after  = V(phase.Get(Tstar - eps));
-  const double dVdT     = (V_before - V_after) / (2. * eps);
-  const double d2VdT2   = (V_before - 2. * V_tstar + V_after) / (eps * eps);
-  const double cs       = sqrt(dVdT / (d2VdT2 * Tstar));
+  const double eps         = 0.01;
+  Minimum phase_min        = phase.Get(Tstar);
+  const double dVdT_before = this->modelPointer->VEff(
+      this->modelPointer->MinimizeOrderVEV(phase_min.point), Tstar + eps, -1);
+  const double dVdT = this->modelPointer->VEff(
+      this->modelPointer->MinimizeOrderVEV(phase_min.point), Tstar, -1);
+  const double dVdT_after = this->modelPointer->VEff(
+      this->modelPointer->MinimizeOrderVEV(phase_min.point), Tstar - eps, -1);
+  const double d2VdT2 = (dVdT_before - dVdT_after) / (2. * eps);
+  const double cs     = sqrt(dVdT / (d2VdT2 * Tstar));
   if (isnan(cs))
   {
     stringstream ss;
     ss << "Sound speed calculation failed!" << "\n";
-    ss << "V(T-eps) V(T) V(T + eps) " << V_after << " " << V_tstar << " "
-       << V_before << "\n";
-    ss << "dVdT = \t" << dVdT << "\n";
+    ss << "dVdT(T + eps) = \t" << dVdT_before << "\n";
+    ss << "dVdT(T)       = \t" << dVdT << "\n";
+    ss << "dVdT(T - eps) = \t" << dVdT_after << "\n";
     ss << "d2VdT2 = \t" << d2VdT2 << "\n";
     ss << "Using cs = 1/sqrt(3) instead.";
     Logger::Write(LoggingLevel::GWDetailed, ss.str());
