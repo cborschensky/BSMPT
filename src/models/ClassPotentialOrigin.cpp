@@ -130,9 +130,9 @@ double Class_Potential_Origin::boson(double MassSquared,
   {
     res += 1.0 / (2 * std::pow(M_PI, 2)) *
            (4 * std::pow(Temp, 3) *
-                ThermalFunctions::JbosonNumericalIntegration(Ratio, 0) -
+                ThermalFunctions::JbosonInterpolated(Ratio, 0) -
             2 * Temp * MassSquared *
-                ThermalFunctions::JbosonNumericalIntegration(Ratio, 1));
+                ThermalFunctions::JbosonInterpolated(Ratio, 1));
   }
   return res;
 }
@@ -158,9 +158,9 @@ Class_Potential_Origin::fermion(double MassSquared, double Temp, int diff) const
   {
     res += 1.0 / (2 * std::pow(M_PI, 2)) *
            (4 * std::pow(Temp, 3) *
-                ThermalFunctions::JfermionNumericalIntegration(Ratio) -
+                ThermalFunctions::JfermionInterpolated(Ratio) -
             2 * Temp * MassSquared *
-                ThermalFunctions::JfermionNumericalIntegration(Ratio, 1));
+                ThermalFunctions::JfermionInterpolated(Ratio, 1));
   }
   return res;
 }
