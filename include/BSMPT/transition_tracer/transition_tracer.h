@@ -68,6 +68,7 @@ struct user_input
   bool gw_calculation = false;
   TransitionTemperature which_transition_temp =
       TransitionTemperature::Percolation;
+  double custom_transition_temp = -1; // CB: added
   int PNLO_scaling                           = 1;
   size_t number_of_initial_scan_temperatures = 25;
 };

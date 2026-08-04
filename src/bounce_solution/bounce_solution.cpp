@@ -51,6 +51,12 @@ BounceSolution::BounceSolution(
     CalculateOptimalDiscreteSymmetry();
     BounceSolution::GWInitialScan();
   }
+
+  // CB: this is needed so that the percolation temperature, which depends on v_w, is also correctly calculated
+  if (UserDefined_vwall >= 0)
+  {
+    vwall = UserDefined_vwall;
+  }
 }
 
 BounceSolution::BounceSolution(
@@ -109,9 +115,10 @@ void BounceSolution::CalculateOptimalDiscreteSymmetry()
 }
 
 void BounceSolution::SetAndCalculateGWParameters(
-    const TransitionTemperature &which_transition_temp_in)
+    const TransitionTemperature &which_transition_temp_in, double custom_transition_temp_in) // CB: added
 {
   which_transition_temp = which_transition_temp_in;
+  custom_transition_temp = custom_transition_temp_in;
   CalcTransitionTemp();
   Logger::Write(LoggingLevel::TransitionDetailed,
                 "Calculate PT strength and inverse time scale at the chosen "
@@ -665,6 +672,14 @@ void BounceSolution::CalcTransitionTemp()
     Tstar = GetCompletionTemp();
     Logger::Write(LoggingLevel::TransitionDetailed,
                   "Completion temperature T = " + std::to_string(Tstar) +
+                      " chosen as transition temperature.");
+  }
+  // CB: added
+  else if (which_transition_temp == TransitionTemperature::Custom)
+  {
+    Tstar = custom_transition_temp;
+    Logger::Write(LoggingLevel::TransitionDetailed,
+                  "Custom temperature T = " + std::to_string(Tstar) +
                       " chosen as transition temperature.");
   }
 
@@ -1275,10 +1290,36 @@ void BounceSolution::CalculateRstar()
 
   double result, error;
   gsl_integration_qags(
-      &F, Tstar, Tc, RelErr, AbsErr, 1000, workspace, &result, &error);
+      &F, Tstar, Tc, AbsErr, RelErr, 1000, workspace, &result, &error);
 
   gsl_integration_workspace_free(workspace);
 
+  if (std::abs(error) > 0.5*std::abs(result)) {
+    Logger::Write(LoggingLevel::GWDetailed,
+                  "Rstar integration has a large numerical error. Try with more precise integration routine.");
+
+    workspace = gsl_integration_workspace_alloc(1000);
+
+    int key = 6; // more precise GSL_INTEG_GAUSS61; default for gsl_integration_qags is key == 2 (GSL_INTEG_GAUSS21)
+    gsl_integration_qag(&F, Tstar, Tc, AbsErr, RelErr, 1000, key, workspace, &result, &error);
+
+    gsl_integration_workspace_free(workspace);
+  }
+
+  if (std::abs(error) > 0.5*std::abs(result)) {
+    Logger::Write(LoggingLevel::GWDetailed,
+                  "Rstar integration still has a large numerical error. Output of CalculateRstar() might be unreliable!");
+  }
+
   this->Rstar = pow(pow(Tstar, 3) * result, -1 / 3.);
+
+  // CB ***********************+
+  std::cout << "FROM CalculateRstar() v" << std::endl;
+  std::cout << "  Tstar=" << Tstar << ", Tc=" << Tc << std::endl;
+  std::cout << "  result=" << result << ", error=" << error << std::endl;
+  std::cout << "  this->Rstar=" << this->Rstar << ", Rstar=" << pow(result, -1 / 3.)/Tstar << std::endl;
+  std::cout << "FROM CalculateRstar() ^" << std::endl;
+  // CB ***********************+
+
 }
 } // namespace BSMPT

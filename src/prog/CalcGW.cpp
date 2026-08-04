@@ -52,6 +52,7 @@ struct CLIOptions
   int CheckNLOStability{1};
   TransitionTemperature WhichTransitionTemperature{
       TransitionTemperature::Percolation};
+  double CustomTransitionTemperature{-1.}; // CB: added
 
   CLIOptions(const BSMPT::parser &argparser);
   bool good() const;
@@ -142,6 +143,7 @@ try
                        args.UseMultithreading,
                        true,
                        args.WhichTransitionTemperature,
+                       args.CustomTransitionTemperature, // CB: added
                        args.UserDefined_PNLO_scaling};
 
       TransitionTracer trans(input);
@@ -567,11 +569,26 @@ CLIOptions::CLIOptions(const BSMPT::parser &argparser)
       WhichTransitionTemperature = TransitionTemperature::Completion;
     }
     else
+    // CB: added
     {
-      ss << "--trans_temp set with invalid argument '" << trans_string
-         << "'. Using percolation temperature.\n";
-      WhichTransitionTemperature = TransitionTemperature::Percolation;
+      try
+      {
+        CustomTransitionTemperature = std::stod(trans_string);
+        WhichTransitionTemperature = TransitionTemperature::Custom;
+      }
+      catch (const std::exception &e)
+      {
+        ss << "--trans_temp set with invalid argument '" << trans_string
+           << "'. Using percolation temperature.\n";
+        WhichTransitionTemperature = TransitionTemperature::Percolation;
+      }
     }
+    // else
+    // {
+    //   ss << "--trans_temp set with invalid argument '" << trans_string
+    //      << "'. Using percolation temperature.\n";
+    //   WhichTransitionTemperature = TransitionTemperature::Percolation;
+    // }
   }
   catch (BSMPT::parserException &)
   {

@@ -161,6 +161,7 @@ try
                         args.UseMultithreading,
                         false,
                         TransitionTemperature::Percolation,
+                        -1, // CB: added
                         1};
 
         input = temp_input;
@@ -181,6 +182,7 @@ try
                         args.UseMultithreading,
                         false,
                         TransitionTemperature::Percolation,
+                        -1, // CB: added
                         1};
 
         input = temp_input;

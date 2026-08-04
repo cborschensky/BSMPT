@@ -205,7 +205,8 @@ enum class TransitionTemperature
   ApproxNucleation,
   Nucleation,
   Percolation,
-  Completion
+  Completion,
+  Custom // CB: added
 };
 /**
  * @brief Available multistep modes

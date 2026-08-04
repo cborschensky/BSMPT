@@ -14,9 +14,9 @@ namespace BSMPT
 
 GravitationalWave::GravitationalWave(
     BounceSolution &BACalc,
-    const TransitionTemperature &which_transition_temp)
+    const TransitionTemperature &which_transition_temp, double custom_transition_temp) // CB: added
 {
-  BACalc.SetAndCalculateGWParameters(which_transition_temp);
+  BACalc.SetAndCalculateGWParameters(which_transition_temp, custom_transition_temp); // CB: added
 
   if (BACalc.status_bounce_sol == StatusGW::Failure)
     data.status = StatusGW::Failure;
@@ -47,8 +47,27 @@ GravitationalWave::GravitationalWave(
                 "Csound_false = " + std::to_string(data.Csound_false));
   Logger::Write(LoggingLevel::GWDetailed,
                 "Csound_true = " + std::to_string(data.Csound_true));
+  // CB ****************************
+  double RstarTEST = BACalc.GetRstar();
+  double HstarTEST = BACalc.HubbleRate(data.transitionTemp);
+  Logger::Write(LoggingLevel::GWDetailed,
+                "RstarTest     = " + std::to_string(RstarTEST));
+  Logger::Write(LoggingLevel::GWDetailed,
+                "HstarTEST = " + std::to_string(HstarTEST));
+  double HRstarEstimateFalse = pow(8*M_PI, 1/3.)/data.betaH*std::max(data.vw, data.Csound_false);
+  double HRstarEstimateTrue = pow(8*M_PI, 1/3.)/data.betaH*std::max(data.vw, data.Csound_true);
+  double RstarEstimateFalse = HRstarEstimateFalse/HstarTEST;
+  double RstarEstimateTrue = HRstarEstimateTrue/HstarTEST;
+  Logger::Write(LoggingLevel::GWDetailed, "HRstarEstimateFalse = " + std::to_string(HRstarEstimateFalse));
+  Logger::Write(LoggingLevel::GWDetailed, "HRstarEstimateTrue  = " + std::to_string(HRstarEstimateTrue));
+  Logger::Write(LoggingLevel::GWDetailed, "RstarEstimateFalse  = " + std::to_string(RstarEstimateFalse));
+  Logger::Write(LoggingLevel::GWDetailed, "RstarEstimateTrue   = " + std::to_string(RstarEstimateTrue));
+  data.HR = HRstarEstimateFalse;
+  // CB ****************************
   // General purpose GW parameters
+  // CB v ****************** !!!!!
   data.HR    = BACalc.GetRstar() * BACalc.HubbleRate(data.transitionTemp);
+  // CB ^ ****************** !!!!!
   data.gstar = BACalc.GetGstar(data.transitionTemp);
   data.FGW0  = 1.64 / pow(h, 2) * 1.e-5 *
               pow(100. / BACalc.GetGstar(data.transitionTemp), 1 / 3.);

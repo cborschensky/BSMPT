@@ -376,6 +376,12 @@ TransitionTracer::TransitionTracer(user_input &input)
               {
                 trans_status = bounce.status_compl;
               }
+              // CB: added
+              else if (input.which_transition_temp ==
+                       TransitionTemperature::Custom)
+              {
+                trans_status = bounce.status_perc; // CB: for custom temperature, just make sure the percolation stage is reached, otherwise the GW calculation does not make sense anyway
+              }
 
               if (trans_status == BSMPT::StatusTemperature::Success &&
                   input.gw_calculation)
@@ -383,7 +389,7 @@ TransitionTracer::TransitionTracer(user_input &input)
                 Logger::Write(LoggingLevel::TransitionDetailed,
                               "Start GW parameters calculation.");
 
-                GravitationalWave gw(bounce, input.which_transition_temp);
+                GravitationalWave gw(bounce, input.which_transition_temp, input.custom_transition_temp); // CB: added
 
                 new_gw_data.status_gw  = gw.data.status;
                 new_gw_data.trans_temp = gw.data.transitionTemp;

@@ -91,6 +91,7 @@ public:
    * @brief Temperature at which to calculate parameters
    */
   TransitionTemperature which_transition_temp = TransitionTemperature::NotSet;
+  double custom_transition_temp = -1; // CB: added
 
   /**
    * @brief critical temperature/highest temperature when transition can occur
@@ -307,7 +308,7 @@ public:
    * @param which_transition_temp_in
    */
   void SetAndCalculateGWParameters(
-      const TransitionTemperature &which_transition_temp_in);
+      const TransitionTemperature &which_transition_temp_in, double custom_transition_temp_in = -1.0); // CB: added
 
   /**
    * @brief status of approximate nucleation temperature calculation
