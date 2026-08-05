@@ -154,10 +154,6 @@ double MinimumTracer::SmallestEigenvalue(
     mat.col(i) = Eigen::Map<Eigen::VectorXd>(current_hessian[i].data(), dim);
   }
 
-  // std::cout << "CB: Hessian eigenvalues >>>" << std::endl;
-  // std::cout << mat.eigenvalues() << std::endl;
-  // std::cout << "CB: Hessian eigenvalues <<<" << std::endl;
-
   // Calculate smallest eigenvalue
   double current_min = 1e100;
   for (auto element : mat.eigenvalues())
@@ -166,7 +162,7 @@ double MinimumTracer::SmallestEigenvalue(
   // numerical errors. To prevent unstable behaviour we add a small constant.
 
   // CB: change it to 1e-3, which coincides with the value of HessianDiagonalShift
-  //     used in LocateMinimum()
+  //     used in LocateMinimum()?
   return current_min + 1e-7;
   // return current_min + 1e-3;
 }
@@ -420,17 +416,6 @@ MinimumTracer::TrackPhase(double &globMinEndT,
       // It is a nearby stationary point!
       if (SmallestEigenvalue(new_point, Hessian) < 0)
       {
-        // // CB: saddle point (i.e. end of phase), move back one step
-        // //     and reduce step size to approach it more slowly
-
-        // if (currentT == initialT) {
-        //   point = new_point;
-        //   continue;
-        // }
-
-        // currentT -= dT;
-        // dT /= 2.;
-
         if (IsInMin == -1)
         {
           zeroTemp = FindZeroSmallestEigenvalue(
@@ -519,10 +504,7 @@ MinimumTracer::TrackPhase(double &globMinEndT,
           if (abs(initialdT) <= abs(dT)) dT = initialdT;
         }
         IsInMin = -1;
-       // // CB: moved here instead of outside the "else"
-       // point = new_point;
       }
-      //// CB: see above
       point = new_point;
     }
 
@@ -685,16 +667,6 @@ MinimumTracer::TrackPhase(const std::vector<double> &point_In,
       // It is a nearby stationary point!
       if (SmallestEigenvalue(new_point, Hessian) < 0)
       {
-        // // CB: saddle point (i.e. end of phase), move back one step
-        // //     and reduce step size to approach it more slowly
-//        if (currentT == initialT) {
-//          point = new_point;
-//          continue;
-//        }
-
-//        currentT -= dT;
-//        dT /= 2.;
-
         if (IsInMin == -1)
         {
           zeroTemp = FindZeroSmallestEigenvalue(
@@ -749,10 +721,7 @@ MinimumTracer::TrackPhase(const std::vector<double> &point_In,
           if (abs(initialdT) <= abs(dT)) dT = initialdT;
         }
         IsInMin = -1;
-      //  // CB: moved here instead of outside the "else"
-      //  point = new_point;
       }
-      //// CB: see above
       point = new_point;
     }
 
@@ -1283,8 +1252,6 @@ int MinimumTracer::IsThereEWSymmetryRestoration()
   Logger::Write(LoggingLevel::MinTracerDetailed,
                 "Starting symmetry restoration check");
 
-  // std::cout << "CB: EW symmetry restoration check >>>" << std::endl;
-
   // CB: changed v
   // CB: start the for-loop at T = 1000, no need to start at T = 1 if we want to probe the high-T limit
   // for (double exponentT = 0; exponentT <= log(Tmax);
@@ -1351,10 +1318,6 @@ int MinimumTracer::IsThereEWSymmetryRestoration()
     EvenOlderSmallestEigenvalue = OldSmallestEigenvalue;
     OldSmallestEigenvalue       = ActualSmallestEigenvalue;
   }
-
-  // std::cout << "CB: EW symmetry restoration check <<<" << std::endl;
-  // std::cout << "CB: ActualSmallestEigenvalue= " << ActualSmallestEigenvalue << std::endl;
-  // exit(-1);
 
   if (GradientEigen.size() == 0) return 0; // Convergence was never met
 
@@ -1444,21 +1407,19 @@ void CoexPhases::CalculateTc()
                        100,
                        35);
   std::vector<double> plotT, plotDeltaV, plot0;
-  if (T_high > T_low) { // CB added; leave this for now to avoid memory overflow if T_high == T_low
-    for (double T = T_low; T <= T_high; T += (T_high - T_low) / 100)
-    {
-      plotT.push_back(T);
-      plotDeltaV.push_back(deltaV(T));
-      plot0.push_back(0);
-    }
-    plotter.addPlot(plotT, plot0, "", '.');
-    plotter.addPlot(plotT, plotDeltaV, "dV", '*');
-
-    plotter.xlabel("T (GeV)");
-    plotter.ylabel("dV (GeV)");
-    plotter.show(ss);
-    Logger::Write(LoggingLevel::MinTracerDetailed, ss.str());
+  for (double T = T_low; T <= T_high; T += (T_high - T_low) / 100)
+  {
+    plotT.push_back(T);
+    plotDeltaV.push_back(deltaV(T));
+    plot0.push_back(0);
   }
+  plotter.addPlot(plotT, plot0, "", '.');
+  plotter.addPlot(plotT, plotDeltaV, "dV", '*');
+
+  plotter.xlabel("T (GeV)");
+  plotter.ylabel("dV (GeV)");
+  plotter.show(ss);
+  Logger::Write(LoggingLevel::MinTracerDetailed, ss.str());
 
   if (deltaV(T_high) > 0 and deltaV(T_low) > 0)
   {
