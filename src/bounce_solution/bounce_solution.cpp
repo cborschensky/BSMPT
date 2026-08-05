@@ -180,10 +180,10 @@ void BounceSolution::GWInitialScan()
     else
     {
       path = MinTracer->WarpPath(last_path,
-                                last_TrueVacuum,
-                                last_FalseVacuum,
-                                TrueVacuum,
-                                FalseVacuum);
+                                 last_TrueVacuum,
+                                 last_FalseVacuum,
+                                 TrueVacuum,
+                                 FalseVacuum);
     }
     BounceActionInt bc(
         path, TrueVacuum, FalseVacuum, V, T, MaxPathIntegrations);
@@ -198,11 +198,11 @@ void BounceSolution::GWInitialScan()
     if (bc.Action / T > 0)
     {
       SolutionList.insert(std::upper_bound(SolutionList.begin(),
-                                          SolutionList.end(),
-                                          bc,
-                                          [](const BounceActionInt &a,
+                                           SolutionList.end(),
+                                           bc,
+                                           [](const BounceActionInt &a,
                                               const BounceActionInt &b)
-                                          { return a.T < b.T; }),
+                                           { return a.T < b.T; }),
                           bc);
     }
 
