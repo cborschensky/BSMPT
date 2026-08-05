@@ -154,67 +154,60 @@ void BounceSolution::GWInitialScan()
       last_FalseVacuum;
   std::vector<std::vector<double>> last_path, path;
 
-  // CB: test v
-  // To avoid the endless loop below.
-  // If there is no actual overlap (i.e. lower and upper bound exactly
-  // the same temperature), then there should be no viable transition
-  if (std::abs(dT) > 1e-5) {
-    for (double T = Tc - dT; T >= phase_pair.T_low + dT; T -= dT)
+  for (double T = Tc - dT; T >= phase_pair.T_low + dT; T -= dT)
+  {
+    Logger::Write(LoggingLevel::BounceDetailed,
+                  "[InitialScan] Calculating action at T = " +
+                      std::to_string(T));
+
+    // Check if transition is energetically viable
+    if (phase_pair.true_phase.Get(T).potential >=
+        phase_pair.false_phase.Get(T).potential)
+      continue;
+
+    TrueVacuum = TransformIntoOptimalDiscreteSymmetry(
+        phase_pair.true_phase.Get(T).point);
+    FalseVacuum = phase_pair.false_phase.Get(T).point;
+    std::function<double(std::vector<double>)> V = [&](std::vector<double> vev)
     {
-      Logger::Write(LoggingLevel::BounceDetailed,
-                    "[InitialScan] Calculating action at T = " +
-                        std::to_string(T));
-
-      // Check if transition is energetically viable
-      if (phase_pair.true_phase.Get(T).potential >=
-          phase_pair.false_phase.Get(T).potential)
-        continue;
-
-      TrueVacuum = TransformIntoOptimalDiscreteSymmetry(
-          phase_pair.true_phase.Get(T).point);
-      FalseVacuum = phase_pair.false_phase.Get(T).point;
-      std::function<double(std::vector<double>)> V = [&](std::vector<double> vev)
-      {
-        // Potential wrapper
-        return modelPointer->VEff(modelPointer->MinimizeOrderVEV(vev), T);
-      };
-      if (last_action < 0)
-      {
-        path = {TrueVacuum, FalseVacuum};
-      }
-      else
-      {
-        path = MinTracer->WarpPath(last_path,
-                                  last_TrueVacuum,
-                                  last_FalseVacuum,
-                                  TrueVacuum,
-                                  FalseVacuum);
-      }
-      BounceActionInt bc(
-          path, TrueVacuum, FalseVacuum, V, T, MaxPathIntegrations);
-      bc.CalculateAction();
-
-      last_path        = bc.Path;
-      last_TrueVacuum  = bc.TrueVacuum;
-      last_FalseVacuum = bc.FalseVacuum;
-
-      // Comment this is you want dumb paths!!
-      last_action = bc.Action;
-      if (bc.Action / T > 0)
-      {
-        SolutionList.insert(std::upper_bound(SolutionList.begin(),
-                                            SolutionList.end(),
-                                            bc,
-                                            [](const BounceActionInt &a,
-                                                const BounceActionInt &b)
-                                            { return a.T < b.T; }),
-                            bc);
-      }
-
-      if (bc.Action / T < 40 and bc.Action > 0) break;
+      // Potential wrapper
+      return modelPointer->VEff(modelPointer->MinimizeOrderVEV(vev), T);
+    };
+    if (last_action < 0)
+    {
+      path = {TrueVacuum, FalseVacuum};
     }
+    else
+    {
+      path = MinTracer->WarpPath(last_path,
+                                last_TrueVacuum,
+                                last_FalseVacuum,
+                                TrueVacuum,
+                                FalseVacuum);
+    }
+    BounceActionInt bc(
+        path, TrueVacuum, FalseVacuum, V, T, MaxPathIntegrations);
+    bc.CalculateAction();
+
+    last_path        = bc.Path;
+    last_TrueVacuum  = bc.TrueVacuum;
+    last_FalseVacuum = bc.FalseVacuum;
+
+    // Comment this is you want dumb paths!!
+    last_action = bc.Action;
+    if (bc.Action / T > 0)
+    {
+      SolutionList.insert(std::upper_bound(SolutionList.begin(),
+                                          SolutionList.end(),
+                                          bc,
+                                          [](const BounceActionInt &a,
+                                              const BounceActionInt &b)
+                                          { return a.T < b.T; }),
+                          bc);
+    }
+
+    if (bc.Action / T < 40 and bc.Action > 0) break;
   }
-  // CB: test ^
   GWSecondaryScan();
 }
 
