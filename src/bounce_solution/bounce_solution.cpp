@@ -1011,14 +1011,60 @@ struct resultErrorPair Nintegrate_Inner(BounceSolution &obj,
   struct resultErrorPair res;
 
   gsl_integration_qags(&F,
-                       obj.GetStoredTemp(),
-                       Tprime,
-                       abs_err,
-                       rel_err,
-                       workspace_size,
-                       w,
-                       &res.result,
-                       &res.error);
+                      obj.GetStoredTemp(),
+                      Tprime,
+                      abs_err,
+                      rel_err,
+                      workspace_size,
+                      w,
+                      &res.result,
+                      &res.error);
+
+  // If target accuracy is not reached, attempt to calculate integral with larger workspace and higher-order GSL_INTEG_GAUSS61 rule
+  if (std::abs(res.error) > rel_err*std::abs(res.result))
+  {
+    std::stringstream ss;
+    gsl_integration_workspace_free(w);
+    workspace_size *= 2;
+    w = gsl_integration_workspace_alloc(workspace_size);
+
+    ss << "Nintegrate_Inner: target accuracy (rel_err=" << rel_err << ") not reached (res=" << res.result << ", err=" << res.error << "). Doubling the workspace size to " << workspace_size << " and recomputing with more precise integration." << "\n";
+
+    int key = 6; // corresponds to GSL_INTEG_GAUSS61
+    double result_2, error_2;
+    gsl_integration_qag(&F,
+                        obj.GetStoredTemp(),
+                        Tprime,
+                        abs_err,
+                        rel_err,
+                        workspace_size,
+                        key,
+                        w,
+                        &result_2,
+                        &error_2);
+
+    if (std::abs(error_2) > rel_err*std::abs(result_2))
+    {
+      ss << "Nintegrate_Inner: target accuracy (rel_err=" << rel_err << ") still not reached (res=" << result_2 << ", err=" << error_2 << "). Result might be unreliable." << "\n";
+    }
+
+    ss << "Nintegrate_Inner: using";
+
+    if (std::abs(error_2*res.result) < std::abs(res.error*result_2)) // Is the same as std::abs(error_2/result_2) > std::abs(error/result), but avoids potential division by zero
+    {
+      res.result = result_2;
+      res.error = error_2;
+      ss << " new ";
+    }
+    else
+    {
+      ss << " old ";
+    }
+
+    ss << "result (res=" << res.result << ", err=" << res.error << ")." << "\n";
+
+    Logger::Write(LoggingLevel::TransitionDetailed, ss.str());
+  }
 
   gsl_integration_workspace_free(w);
 
@@ -1040,14 +1086,60 @@ struct resultErrorPair Nintegrate_Outer(BounceSolution &obj)
   struct resultErrorPair res;
 
   gsl_integration_qags(&F,
-                       obj.GetStoredTemp(),
-                       obj.GetCriticalTemp(),
-                       abs_err,
-                       rel_err,
-                       workspace_size,
-                       w,
-                       &res.result,
-                       &res.error);
+                      obj.GetStoredTemp(),
+                      obj.GetCriticalTemp(),
+                      abs_err,
+                      rel_err,
+                      workspace_size,
+                      w,
+                      &res.result,
+                      &res.error);
+
+  // If target accuracy is not reached, attempt to calculate integral with larger workspace and higher-order GSL_INTEG_GAUSS61 rule
+  if (std::abs(res.error) > rel_err*std::abs(res.result))
+  {
+    std::stringstream ss;
+    gsl_integration_workspace_free(w);
+    workspace_size *= 2;
+    w = gsl_integration_workspace_alloc(workspace_size);
+
+    ss << "Nintegrate_Outer: target accuracy (rel_err=" << rel_err << ") not reached (res=" << res.result << ", err=" << res.error << "). Doubling the workspace size to " << workspace_size << " and recomputing with more precise integration." << "\n";
+
+    int key = 6; // corresponds to GSL_INTEG_GAUSS61
+    double result_2, error_2;
+    gsl_integration_qag(&F,
+                        obj.GetStoredTemp(),
+                        obj.GetCriticalTemp(),
+                        abs_err,
+                        rel_err,
+                        workspace_size,
+                        key,
+                        w,
+                        &result_2,
+                        &error_2);
+
+    if (std::abs(error_2) > rel_err*std::abs(result_2))
+    {
+      ss << "Nintegrate_Outer: target accuracy (rel_err=" << rel_err << ") still not reached (res=" << result_2 << ", err=" << error_2 << "). Result might be unreliable." << "\n";
+    }
+
+    ss << "Nintegrate_Outer: using";
+
+    if (std::abs(error_2*res.result) < std::abs(res.error*result_2)) // Is the same as std::abs(error_2/result_2) > std::abs(error/result), but avoids potential division by zero
+    {
+      res.result = result_2;
+      res.error = error_2;
+      ss << " new ";
+    }
+    else
+    {
+      ss << " old ";
+    }
+
+    ss << "result (res=" << res.result << ", err=" << res.error << ")." << "\n";
+
+    Logger::Write(LoggingLevel::TransitionDetailed, ss.str());
+  }
 
   gsl_integration_workspace_free(w);
 
@@ -1257,7 +1349,8 @@ double BounceSolution::GetRstar()
 
 void BounceSolution::CalculateRstar()
 {
-  gsl_integration_workspace *workspace = gsl_integration_workspace_alloc(1000);
+  std::size_t workspace_size = 1000;
+  gsl_integration_workspace *workspace = gsl_integration_workspace_alloc(workspace_size);
 
   gsl_function F;
   F.function = [](double T, void *params) -> double
@@ -1271,7 +1364,46 @@ void BounceSolution::CalculateRstar()
 
   double result, error;
   gsl_integration_qags(
-      &F, Tstar, Tc, AbsErr, RelErr, 1000, workspace, &result, &error);
+      &F, Tstar, Tc, AbsErr, RelErr, workspace_size, workspace, &result, &error);
+
+  // If target accuracy is not reached, attempt to calculate integral with larger workspace and higher-order GSL_INTEG_GAUSS61 rule
+  if (std::abs(error) > RelErr*std::abs(result))
+  {
+    std::stringstream ss;
+    gsl_integration_workspace_free(workspace);
+    workspace_size *= 2;
+    workspace = gsl_integration_workspace_alloc(workspace_size);
+
+    ss << "CalculateRstar: target accuracy (rel_err=" << RelErr << ") not reached (res=" << result << ", err=" << error << "). Doubling the workspace size to " << workspace_size << " and recomputing with more precise integration." << "\n";
+
+    int key = 6; // corresponds to GSL_INTEG_GAUSS61
+    double result_2, error_2;
+    gsl_integration_qag(
+        &F, Tstar, Tc, AbsErr, RelErr, workspace_size, key, workspace, &result_2, &error_2);
+
+    if (std::abs(error_2) > RelErr*std::abs(result_2))
+    {
+      ss << "CalculateRstar: target accuracy (rel_err=" << RelErr << ") still not reached (res=" << result_2 << ", err=" << error_2 << "). Result might be unreliable." << "\n";
+    }
+
+    ss << "CalculateRstar: using";
+
+    if (std::abs(error_2*result) < std::abs(error*result_2)) // Is the same as std::abs(error_2/result_2) > std::abs(error/result), but avoids potential division by zero
+    {
+      result = result_2;
+      error = error_2;
+      ss << " new ";
+    }
+    else
+    {
+      ss << " old ";
+    }
+
+    ss << "result (res=" << result << ", err=" << error << ")." << "\n";
+
+
+    Logger::Write(LoggingLevel::GWDetailed, ss.str());
+  }
 
   gsl_integration_workspace_free(workspace);
 
